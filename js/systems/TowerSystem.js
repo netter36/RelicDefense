@@ -178,62 +178,34 @@ export class TowerSystem {
 
         // 2. Element Specifics
         if (element === 'fire') {
-            // Expanding Ring & Debris
+            // Simple Fire Ring
             g.lineStyle(2, 0xffaa00, 1);
-            g.strokeCircle(x, y, 15);
-            for (let i = 0; i < 6; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const d = Math.random() * 20;
-                g.fillStyle(0xff5500, 1);
-                g.fillCircle(x + Math.cos(angle) * d, y + Math.sin(angle) * d, 3);
-            }
+            g.strokeCircle(x, y, 14);
         } else if (element === 'ice') {
-            // Shatter lines
-            g.lineStyle(2, 0xaaddff, 0.8);
-            for (let i = 0; i < 6; i++) {
-                const angle = (Math.PI * 2 / 6) * i;
-                g.lineBetween(x, y, x + Math.cos(angle) * 25, y + Math.sin(angle) * 25);
-            }
+            // Simple Cross
+            g.lineStyle(2, 0xaaddff, 1);
+            g.lineBetween(x - 8, y - 8, x + 8, y + 8);
+            g.lineBetween(x - 8, y + 8, x + 8, y - 8);
         } else if (element === 'thunder') {
-            // Zigzag Sparks
+            // Square Flash
             g.lineStyle(2, 0xffffaa, 1);
-            for (let i = 0; i < 4; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const d = 10 + Math.random() * 20;
-                let cx = x, cy = y;
-                let ex = x + Math.cos(angle) * d, ey = y + Math.sin(angle) * d;
-                let mx = (cx + ex) / 2 + (Math.random() - 0.5) * 10;
-                let my = (cy + ey) / 2 + (Math.random() - 0.5) * 10;
-                g.beginPath();
-                g.moveTo(cx, cy); g.lineTo(mx, my); g.lineTo(ex, ey);
-                g.strokePath();
-            }
+            g.strokeRect(x - 6, y - 6, 12, 12);
         } else if (element === 'gem') {
-            // Star/Cross Flash
-            g.lineStyle(3, 0xff00ff, 0.8);
-            g.lineBetween(x - 15, y, x + 15, y);
-            g.lineBetween(x, y - 15, x, y + 15);
-            g.lineStyle(1, 0xffffff, 1);
-            g.lineBetween(x - 10, y - 10, x + 10, y + 10);
-            g.lineBetween(x + 10, y - 10, x - 10, y + 10);
+            // Plus Flash
+            g.lineStyle(2, 0xff00ff, 1);
+            g.lineBetween(x - 10, y, x + 10, y);
+            g.lineBetween(x, y - 10, x, y + 10);
         } else {
-            // Leaf/Default: Spores
-            g.fillStyle(0x88ff88, 0.8);
-            for (let i = 0; i < 8; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const d = 5 + Math.random() * 15;
-                g.fillCircle(x + Math.cos(angle) * d, y + Math.sin(angle) * d, 2);
-            }
+            // Leaf Circle
+            g.lineStyle(2, 0x88ff88, 1);
+            g.strokeCircle(x, y, 12);
         }
 
         // 3. Animation
         this.scene.tweens.add({
             targets: g,
             alpha: 0,
-            scaleX: 1.6,
-            scaleY: 1.6,
-            duration: 350,
-            ease: 'Quad.out',
+            duration: 250,
             onComplete: () => g.destroy()
         });
     }
@@ -244,17 +216,52 @@ export class TowerSystem {
         const colors = { fire: 0xff5555, ice: 0x33ddff, thunder: 0xffeb3b, leaf: 0x4caf50, gem: 0xe040fb };
         const color = colors[tower.element] || 0xffeb3b;
 
-        let proj;
-        if (tower.element === 'ice') {
-            proj = this.scene.add.rectangle(tower.x, tower.y, 8, 8, color);
-            proj.rotation = Math.PI / 4;
-        } else if (tower.element === 'leaf') {
-            proj = this.scene.add.triangle(tower.x, tower.y, 0, 5, 5, 0, 10, 5, color);
-        } else {
-            proj = this.scene.add.circle(tower.x, tower.y, 5, color);
-        }
+        const proj = this.scene.add.graphics();
+        proj.x = tower.x;
+        proj.y = tower.y;
         proj.setDepth(25);
+        proj.setBlendMode(Phaser.BlendModes.ADD);
         this.scene.physics.add.existing(proj);
+
+        if (tower.element === 'ice') {
+            // Flashy Snowflake (Large)
+            proj.lineStyle(3, 0x33ddff, 1);
+            proj.lineBetween(0, -14, 0, 14);
+            proj.lineBetween(-12, -7, 12, 7);
+            proj.lineBetween(-12, 7, 12, -7);
+            proj.fillStyle(0xffffff, 1);
+            proj.fillCircle(0, 0, 5);
+            this.scene.tweens.add({ targets: proj, angle: 360, duration: 400, repeat: -1 });
+        } else if (tower.element === 'fire') {
+            // Sun-like (Large)
+            proj.fillStyle(0xff3300, 0.5); proj.fillCircle(0, 0, 14);
+            proj.fillStyle(0xff8800, 0.8); proj.fillCircle(0, 0, 9);
+            proj.fillStyle(0xffffaa, 1); proj.fillCircle(0, 0, 5);
+        } else if (tower.element === 'gem') {
+            // Mystic 4-Point Star (Large)
+            proj.lineStyle(3, 0xe040fb, 1);
+            proj.strokeCircle(0, 0, 10);
+            proj.fillStyle(0xffffff, 1);
+            proj.beginPath();
+            proj.moveTo(0, -12); proj.lineTo(3, -3); proj.lineTo(12, 0); proj.lineTo(3, 3);
+            proj.moveTo(0, 12); proj.lineTo(-3, 3); proj.lineTo(-12, 0); proj.lineTo(-3, -3);
+            proj.closePath();
+            proj.fill();
+            this.scene.tweens.add({ targets: proj, angle: -360, duration: 600, repeat: -1 });
+        } else if (tower.element === 'leaf') {
+            // 4-Petal Flower (Large)
+            proj.fillStyle(0x4caf50, 1);
+            proj.fillCircle(-6, -6, 5); proj.fillCircle(6, -6, 5);
+            proj.fillCircle(-6, 6, 5); proj.fillCircle(6, 6, 5);
+            proj.fillStyle(0xffffaa, 1); proj.fillCircle(0, 0, 5);
+            this.scene.tweens.add({ targets: proj, angle: 360, duration: 800, repeat: -1 });
+        } else {
+            // Charged Thunder Box (Large)
+            proj.fillStyle(0xffff00, 0.8); proj.fillCircle(0, 0, 8);
+            proj.lineStyle(2, 0xffffff, 1);
+            proj.strokeRect(-6, -6, 12, 12);
+            this.scene.tweens.add({ targets: proj, angle: 360, duration: 200, repeat: -1 });
+        }
 
         const spread = 20;
         const tx = target.x + (Math.random() * spread - spread / 2);

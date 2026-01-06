@@ -76,7 +76,7 @@ export const ITEMS = [
 
     // --- 디버프형 (Support/Debuff) ---
     {
-        id: 'leaf_spore', name: '맹독 포자', shape: [[1, 0], [0, 1]], width: 2, height: 2, element: 'leaf', type: 'artifact',
+        id: 'leaf_spore', name: '맹독 포자', shape: [[1, 1], [1, 0]], width: 2, height: 2, element: 'leaf', type: 'artifact',
         stats: { atk: 10, range: 250, fireRate: 900, attackType: 'normal', debuff: { type: 'poison', val: 5, duration: 4000 } },
         desc: '강력한 독소를 품은 포자를 날려 적을 중독시킵니다.',
         flavor: '"숨을 쉴수록 고통스러울 것이다."'

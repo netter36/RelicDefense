@@ -43,6 +43,28 @@ export class UIManager {
         if (el) el.innerText = count;
     }
 
+    updateDifficultyInfo(difficulty, interval, time) {
+        const el = document.getElementById('difficulty-level');
+        if (el) {
+            const rate = (interval / 1000).toFixed(1);
+            const totalSec = Math.floor((time || 0) / 1000);
+            const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+            const s = (totalSec % 60).toString().padStart(2, '0');
+
+            el.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.75em; text-align: left; opacity: 0.9; margin-top: 4px;">
+                <div style="grid-column: span 2; font-size: 1.2rem; font-weight: bold; color: #ef4444;text-align: center; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 4px;">
+                    LV.${difficulty.toFixed(2)}
+                </div>
+                <div>⏱️ ${m}:${s}</div>
+                <div>⚡ ${rate}s</div>
+                <div style="grid-column: span 2; text-align: center; color: #f87171; background: rgba(255,0,0,0.1); border-radius: 4px; padding: 2px;">
+                    🩸 HP 보너스 x${difficulty.toFixed(2)}
+                </div>
+            </div>`;
+        }
+    }
+
     initShop() {
         ITEMS.forEach(item => {
             if (!item.baseDesc) {

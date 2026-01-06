@@ -27,12 +27,8 @@ export default class MainScene extends Phaser.Scene {
         this.inputSystem.initInput();
         this.uiManager.initShop();
 
-        this.time.addEvent({
-            delay: 2500,
-            callback: () => this.enemySystem.spawnMonster(),
-            callbackScope: this,
-            loop: true
-        });
+        // Spawn handled by EnemySystem
+        // this.time.addEvent({ ... });
 
         // Build starting item
         this.time.delayedCall(100, () => {

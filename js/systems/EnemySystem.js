@@ -6,10 +6,15 @@ export class EnemySystem {
         this.path = path;
         this.uiManager = uiManager;
         this.monsters = this.scene.physics.add.group();
+
+        // Difficulty & Spawning scale
+        this.gameTime = 0;
+        this.spawnTimer = 2000;
+        this.difficulty = 1.0;
     }
 
     spawnMonster() {
-        const type = MONSTER_TYPES[Math.floor(Math.random() * MONSTER_TYPES.length)];
+        const type = this.getWeightedRandomMonster();
         const speedVar = (Math.random() * 0.1) - 0.05;
         const finalSpeed = type.speed * (1 + speedVar);
 
@@ -24,7 +29,11 @@ export class EnemySystem {
         this.scene.physics.add.existing(m);
         m.body.setCircle(size / 2, -size / 2, -size / 2.5);
 
-        m.t = 0; m.speed = finalSpeed; m.hp = type.hp; m.maxHp = type.hp;
+        m.t = 0;
+        m.speed = finalSpeed;
+        m.hp = Math.floor(type.hp * this.difficulty);
+        m.maxHp = m.hp;
+        m.difficulty = this.difficulty; // Store for valid kill/reward scaling if needed
         m.hpBar = this.scene.add.graphics().setDepth(21);
         m.hpBarWidth = size;
         m.debuffs = []; // Initialize debuffs
@@ -50,7 +59,34 @@ export class EnemySystem {
         this.uiManager.updateMonsterCount(this.monsters.countActive());
     }
 
+    getWeightedRandomMonster() {
+        const totalWeight = MONSTER_TYPES.reduce((sum, t) => sum + (t.weight || 1), 0);
+        let r = Math.random() * totalWeight;
+        for (const t of MONSTER_TYPES) {
+            r -= (t.weight || 1);
+            if (r <= 0) return t;
+        }
+        return MONSTER_TYPES[0];
+    }
+
     update(delta) {
+        // Difficulty Logic
+        this.gameTime += delta;
+        this.difficulty = 1 + (this.gameTime / 60000) * 0.8; // +80% HP per minute
+
+        const baseInterval = 2500;
+        const currentInterval = Math.max(400, baseInterval / (1 + (this.difficulty - 1) * 0.6));
+
+        this.spawnTimer -= delta;
+        if (this.spawnTimer <= 0) {
+            this.spawnMonster();
+            this.spawnTimer = currentInterval;
+        }
+
+        // Notify UI
+        if (this.uiManager.updateDifficultyInfo) {
+            this.uiManager.updateDifficultyInfo(this.difficulty, currentInterval, this.gameTime);
+        }
         this.monsters.getChildren().forEach(m => {
             if (!m.active) return;
 
