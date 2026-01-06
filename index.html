@@ -30,26 +30,35 @@
 
                 <section class="panel-container" style="border-top: 2px solid var(--border-color);">
                     <div class="panel-header">수비 본부 정보</div>
-                    <div class="stats-list">
-                        <div class="stat-item">
-                            <span>전술력 (Tactics)</span>
-                            <span id="stat-atk" class="value">0</span>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">전술력</div>
+                            <div id="stat-atk" class="stat-value">0</div>
                         </div>
-                        <div class="stat-item">
-                            <span>연사 보너스</span>
-                            <span id="stat-fire-bonus" class="value">0%</span>
+                        <div class="stat-card">
+                            <div class="stat-label">연사속도</div>
+                            <div id="stat-fire-bonus" class="stat-value">0%</div>
                         </div>
-                        <div class="stat-item">
-                            <span>배치된 유물</span>
-                            <span id="stat-artifacts" class="value">0</span>
+                        <div class="stat-card">
+                            <div class="stat-label">배치 유물</div>
+                            <div id="stat-artifacts" class="stat-value">0</div>
                         </div>
-                        <div class="stat-item monster-stat">
-                            <span>현재 몬스터 수</span>
-                            <span id="monster-count" class="value">0</span>
+                        <div class="stat-card">
+                            <div class="stat-label">몬스터</div>
+                            <div id="monster-count" class="stat-value monster-value">0</div>
                         </div>
-                        <div class="stat-item difficulty-stat">
-                            <span>위험도 (Level)</span>
-                            <span id="difficulty-level" class="value" style="color: #ef4444;">1.0</span>
+                    </div>
+
+                    <div class="difficulty-card">
+                        <div class="diff-header">
+                            <span>현재 위험도</span>
+                            <span id="difficulty-level-value" class="diff-value">LV.1.00</span>
+                        </div>
+                        <div class="diff-details" id="difficulty-details">
+                            <!-- Dynamic content injected by JS -->
+                            <div class="diff-row"><span>⏱️ 진행 시간</span><span>00:00</span></div>
+                            <div class="diff-row"><span>⚡ 스폰 주기</span><span>1.0s</span></div>
+                            <div class="diff-bonus">HP 보너스 x1.0</div>
                         </div>
                     </div>
                 </section>

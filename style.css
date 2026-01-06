@@ -159,27 +159,102 @@ body {
     margin-top: 50px;
 }
 
-.stat-item {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 14px;
+/* Stats Grid Layout */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px 15px;
 }
 
-.stat-item .value {
+.stat-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 0.9rem;
     color: #10b981;
     font-family: var(--pixel-font);
-    font-size: 10px;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
 }
 
-.monster-stat {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color);
-}
-
-.monster-stat .value {
+.monster-value {
     color: #ef4444;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+/* Difficulty Card */
+.difficulty-card {
+    margin: 0 15px 15px 15px;
+    background: linear-gradient(145deg, rgba(239, 68, 68, 0.1), rgba(0, 0, 0, 0.2));
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.diff-header {
+    background: rgba(239, 68, 68, 0.2);
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.diff-header span {
+    font-size: 0.8rem;
+    color: #fca5a5;
+    font-weight: bold;
+}
+
+.diff-value {
+    font-family: var(--pixel-font);
+    color: #fecaca !important;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.diff-details {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.diff-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.diff-bonus {
+    margin-top: 4px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #f87171;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: 4px;
+    border: 1px dashed rgba(248, 113, 113, 0.3);
 }
 
 .item-editor {
@@ -303,26 +378,101 @@ body {
 }
 
 /* Tooltip Styles */
+/* Enhanced Tooltip - Glassmorphism */
 .tooltip {
     position: fixed;
     pointer-events: none;
-    background: rgba(15, 15, 18, 0.95);
-    border: 1px solid #8b5cf6;
-    padding: 15px;
-    width: 200px;
+    background: rgba(15, 15, 20, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 0;
+    width: 240px;
     z-index: 1000;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.3),
+        0 10px 15px -3px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    transform-origin: top left;
 }
 
 .tooltip.hidden {
+    opacity: 0;
+    transform: scale(0.95);
     display: none;
+    /* Keep display none for layout but use opacity for transition if we remove display none management in JS, sticking to current JS logic */
+}
+
+.tooltip-header {
+    background: linear-gradient(to right, rgba(139, 92, 246, 0.15), transparent);
+    padding: 12px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .tooltip-name {
-    font-weight: bold;
+    font-weight: 800;
+    font-size: 1.1rem;
     color: #f59e0b;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    font-family: var(--main-font);
+    /* Use main font for name for better readability */
+    letter-spacing: -0.5px;
+}
+
+.tooltip-rarity {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.tooltip-content {
+    padding: 15px;
+}
+
+.tooltip-desc {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+}
+
+/* Tooltip Stat Grid */
+.tt-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.tt-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.tt-stat-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-bottom: 2px;
+}
+
+.tt-stat-val {
+    font-weight: bold;
+    font-size: 0.95rem;
+    font-family: var(--pixel-font);
+}
+
+.tt-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+    margin: 10px 0;
 }
 
 .tooltip-desc {

@@ -45,24 +45,31 @@ export class UIManager {
     }
 
     updateDifficultyInfo(difficulty, interval, time) {
-        const el = document.getElementById('difficulty-level');
-        if (el) {
+        // Updated for new card layout
+        const lvlEl = document.getElementById('difficulty-level-value');
+        const detailsEl = document.getElementById('difficulty-details');
+
+        if (lvlEl && detailsEl) {
             const rate = (interval / 1000).toFixed(1);
             const totalSec = Math.floor((time || 0) / 1000);
             const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
             const s = (totalSec % 60).toString().padStart(2, '0');
 
-            el.innerHTML = `
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.75em; text-align: left; opacity: 0.9; margin-top: 4px;">
-                <div style="grid-column: span 2; font-size: 1.2rem; font-weight: bold; color: #ef4444;text-align: center; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 4px;">
-                    LV.${difficulty.toFixed(2)}
+            lvlEl.innerText = `LV.${difficulty.toFixed(2)}`;
+
+            detailsEl.innerHTML = `
+                <div class="diff-row">
+                    <span>⏱️ 진행 시간</span>
+                    <span style="color:#e2e8f0; font-family: var(--pixel-font);">${m}:${s}</span>
                 </div>
-                <div>⏱️ ${m}:${s}</div>
-                <div>⚡ ${rate}s</div>
-                <div style="grid-column: span 2; text-align: center; color: #f87171; background: rgba(255,0,0,0.1); border-radius: 4px; padding: 2px;">
-                    🩸 HP 보너스 x${difficulty.toFixed(2)}
+                <div class="diff-row">
+                    <span>⚡ 스폰 주기</span>
+                    <span style="color:#fbbf24; font-family: var(--pixel-font);">${rate}s</span>
                 </div>
-            </div>`;
+                <div class="diff-bonus">
+                    🩸 몬스터 체력 x${difficulty.toFixed(2)}
+                </div>
+            `;
         }
     }
 
@@ -190,28 +197,44 @@ export class UIManager {
         this.tooltip.classList.remove('hidden');
         this.tooltip.style.display = 'block';
 
-        this.tooltip.querySelector('.tooltip-name').innerText = item.name;
-
-        let rarityText = item.element || '기본';
+        // Rebuild Tooltip HTML structure if it doesn't match new design
+        // We will just overwrite innerHTML for simplicity to ensure structure
+        let rarityText = item.element ? ELEMENT_COLORS[item.element] ? item.element.toUpperCase() : item.element : 'BASIC';
         let rarityColor = '#94a3b8';
+
+        // Translate Element
+        const TAG_MAP = {
+            'fire': '불 (FIRE)', 'ice': '얼음 (ICE)', 'thunder': '번개 (THUNDER)',
+            'leaf': '풀 (LEAF)', 'gem': '보석 (VOID)', 'tablet': '석판', 'artifact': '전술유물'
+        };
+        rarityText = TAG_MAP[item.element] || rarityText;
 
         if (isPlaced) {
             if (item.activeSynergy) {
                 rarityText = `✨ ${item.activeSynergy}`;
                 rarityColor = '#f59e0b';
             } else if (item.isSynergetic) {
-                rarityText = '시너지 활성';
+                rarityText = '✨ 시너지 활성';
                 rarityColor = '#f59e0b';
             }
         }
 
-        const rarityEl = this.tooltip.querySelector('.tooltip-rarity');
-        rarityEl.innerText = rarityText;
-        rarityEl.style.color = rarityColor;
-        this.tooltip.querySelector('.tooltip-desc').innerHTML = this.getDynamicDesc(item);
+        const dynamicContent = this.getDynamicDesc(item);
+
+        this.tooltip.innerHTML = `
+            <div class="tooltip-header">
+                <div class="tooltip-name">${item.name}</div>
+                <div class="tooltip-rarity" style="color:${rarityColor}">${rarityText}</div>
+            </div>
+            <div class="tooltip-content">
+                <div class="tooltip-desc">${dynamicContent}</div>
+            </div>
+        `;
 
         this.updateTooltipPos(e);
     }
+
+
 
     updateTooltipPos(e) {
         if (!this.tooltip) return;
@@ -232,10 +255,10 @@ export class UIManager {
         if (item.type === 'tablet') {
             const buffText = item.buff ? `🛡️ 인접 공격력 +${item.buff.val}%` : `[기초 시설]`;
             const color = item.buff ? '#4ade80' : '#94a3b8';
-            return `<div style="font-size:0.95em; line-height:1.4;">
-                <div style="color:${color}; font-weight:bold; margin-bottom:6px;">${buffText}</div>
-                <div style="font-size:0.9em; color:#ccc; padding-top:4px; border-top:1px solid #ffffff20;">${item.baseDesc || item.desc || ""}</div>
-            </div>`;
+            return `
+                <div style="color:${color}; font-weight:bold; margin-bottom:8px; font-size: 0.95rem;">${buffText}</div>
+                <div style="font-size:0.85rem; color:#94a3b8; line-height:1.4;">${item.baseDesc || item.desc || ""}</div>
+            `;
         }
 
         const stats = item.stats || {};
@@ -246,51 +269,66 @@ export class UIManager {
         // DPS Calculation
         const dps = Math.round(atk * (1000 / (fr || 1000)));
 
-        const synColors = {
-            fire: '#ff5555',
-            ice: '#33ddff',
-            thunder: '#ffeb3b',
-            leaf: '#4caf50',
-            gem: '#e040fb'
-        };
+        let html = `
+            <div class="tt-stats">
+                <div class="tt-stat">
+                    <span class="tt-stat-label">DPS (초당 피해)</span>
+                    <span class="tt-stat-val" style="color:#fbbf24">${Math.round(dps)}</span>
+                </div>
+                <div class="tt-stat">
+                    <span class="tt-stat-label">사거리 (Range)</span>
+                    <span class="tt-stat-val" style="color:#38bdf8">${Math.round(range)}</span>
+                </div>
+            </div>
+        `;
 
-        let html = `<div style="font-size:0.95em; line-height:1.5;">`;
-        html += `<div>⚡ 초당 공격력: <span style="color:#fbbf24; font-weight:bold;">${Math.round(dps)}</span></div>`;
-        html += `<div>🎯 사거리: <span style="color:#38bdf8; font-weight:bold;">${Math.round(range)}</span></div>`;
+        let extraStats = [];
 
         // Special Stats
         if (stats.attackType === 'rapid') {
             const reload = (stats.reloadTime || 0) / 1000;
-            html += `<div>🔄 장전: <span style="color:#cbd5e1;">${reload.toFixed(1)}s</span> <span style="font-size:0.9em; color:#94a3b8;">(${stats.burstCount}연사)</span></div>`;
+            extraStats.push(`<div>🔄 장전: <span style="color:#fff;">${reload.toFixed(1)}s</span> <span style="opacity:0.7">(${stats.burstCount}연사)</span></div>`);
         }
         if (stats.attackType === 'chain') {
-            html += `<div>🔗 연쇄: <span style="color:#a78bfa; font-weight:bold;">${stats.chainCount}명</span></div>`;
+            extraStats.push(`<div>🔗 연쇄 공격: <span style="color:#a78bfa;">${stats.chainCount}명</span></div>`);
         }
         if (stats.attackType === 'multi') {
-            html += `<div>✨ 동시: <span style="color:#f472b6; font-weight:bold;">${stats.projectileCount}발</span></div>`;
+            extraStats.push(`<div>✨ 동시 발사: <span style="color:#f472b6;">${stats.projectileCount}발</span></div>`);
         }
         if (stats.aoeRadius) {
-            html += `<div>💥 범위: <span style="color:#f87171; font-weight:bold;">${Math.round(stats.aoeRadius)}px</span></div>`;
+            extraStats.push(`<div>💥 폭발 범위: <span style="color:#f87171;">${Math.round(stats.aoeRadius)}px</span></div>`);
+        }
+
+        if (extraStats.length > 0) {
+            html += `<div style="font-size:0.85em; display:flex; flex-direction:column; gap:4px; margin-bottom:8px;">${extraStats.join('')}</div>`;
         }
 
         // Active Synergy
         if (item.activeSynergy) {
+            const synColors = {
+                fire: '#ff5555',
+                ice: '#33ddff',
+                thunder: '#ffeb3b',
+                leaf: '#4caf50',
+                gem: '#e040fb'
+            };
             const sColor = synColors[item.element] || '#ffffff';
-            html += `<div style="color:${sColor}; font-weight:bold; margin-top:4px;">✨ ${item.activeSynergy} 발동!</div>`;
+            html += `<div class="tt-divider"></div>`;
+            html += `<div style="color:${sColor}; font-weight:bold; margin-bottom:4px; font-size:0.9rem;">✨ ${item.activeSynergy} 발동!</div>`;
         }
 
         // Description
         const desc = item.baseDesc || item.desc || "";
         if (desc) {
-            html += `<div style="margin-top:6px; padding-top:6px; border-top:1px solid #ffffff20; color:#ccc; font-size:0.9em;">${desc}</div>`;
+            html += `<div class="tt-divider"></div>`;
+            html += `<div style="color:#ccc; font-size:0.85em; font-style: italic;">${desc}</div>`;
         }
 
         // Flavor Text
         if (item.flavor) {
-            html += `<div style="margin-top:4px; color:#94a3b8; font-size:0.8em; font-style:italic;">${item.flavor}</div>`;
+            html += `<div style="margin-top:8px; color:#64748b; font-size:0.8em;">${item.flavor}</div>`;
         }
 
-        html += `</div>`;
         return html;
     }
 }
