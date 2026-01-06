@@ -119,6 +119,11 @@ export default class MainScene extends Phaser.Scene {
             html += `<div style="margin-top:6px; padding-top:6px; border-top:1px solid #ffffff20; color:#ccc; font-size:0.9em;">${desc}</div>`;
         }
 
+        // Flavor Text
+        if (item.flavor) {
+            html += `<div style="margin-top:4px; color:#94a3b8; font-size:0.8em; font-style:italic;">${item.flavor}</div>`;
+        }
+
         html += `</div>`;
         return html;
     }

@@ -43,7 +43,7 @@ body {
 }
 
 .game-container {
-    width: 1250px;
+    width: 1400px;
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -122,6 +122,11 @@ body {
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+}
+
+.side-right {
+    width: 360px;
+    /* Wider Item Shop */
 }
 
 .panel-container {
