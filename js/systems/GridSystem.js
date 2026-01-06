@@ -68,6 +68,7 @@ export class GridSystem {
         });
 
         container.on('pointerover', (pointer) => {
+            this.hoveredItem = item; // Track hovered item for rotation
             this.uiManager.showTooltip(pointer, item, true);
             // Show Range on Hover
             if (item.type !== 'tablet') {
@@ -84,6 +85,7 @@ export class GridSystem {
         });
 
         container.on('pointerout', () => {
+            this.hoveredItem = null;
             this.uiManager.hideTooltip();
             if (this.hoverRange) {
                 this.hoverRange.clear();
@@ -440,6 +442,70 @@ export class GridSystem {
     canPlace(item, x, y) {
         if (x < 0 || y < 0 || x + item.width > GRID_WIDTH || y + item.height > GRID_HEIGHT) return false;
         return item.shape.every((row, dy) => row.every((v, dx) => !v || !this.grid[y + dy][x + dx]));
+    }
+
+    rotateItem(item) {
+        if (!item) return;
+
+        // 1. Remove from grid temporarily
+        this.setGrid(item, null);
+
+        // 2. Rotate Shape Matrix (Clockwise)
+        const oldShape = item.shape;
+        const rows = oldShape.length;
+        const cols = oldShape[0].length;
+
+        const newShape = Array.from({ length: cols }, () => Array(rows).fill(0));
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                newShape[c][rows - 1 - r] = oldShape[r][c];
+            }
+        }
+
+        // 3. Update dimensions
+        const oldW = item.width;
+        const oldH = item.height;
+        item.shape = newShape;
+        item.width = cols;  // New width is old height (cols of new matrix) -> Wait. new matrix rows=cols, cols=rows.
+        // newShape has `cols` rows and `rows` columns.
+        // So new Width is `rows` (old height).
+        // new Height is `cols` (old width).
+        item.width = rows;
+        item.height = cols;
+
+        // 4. Try place
+        if (this.canPlace(item, item.gridPos.x, item.gridPos.y)) {
+            // Success
+            this.snap(item);
+            this.setGrid(item, item);
+            this.renderProceduralShape(item.el, item);
+            this.calculateSynergies();
+
+            // Re-show range if hovering
+            if (this.hoverRange) {
+                this.hoverRange.clear();
+                this.hoverRange.lineStyle(2, 0xffffff, 0.4);
+                this.hoverRange.fillStyle(0xffffff, 0.05);
+                this.hoverRange.strokeCircle(item.el.x, item.el.y, item.range || 250);
+                this.hoverRange.fillCircle(item.el.x, item.el.y, item.range || 250);
+            }
+
+        } else {
+            // Revert
+            item.shape = oldShape;
+            item.width = oldW;
+            item.height = oldH;
+            this.setGrid(item, item);
+            // Shake effect for feedback?
+            this.scene.tweens.add({
+                targets: item.el,
+                x: item.el.x + 5,
+                duration: 50,
+                yoyo: true,
+                repeat: 3
+            });
+        }
     }
 
     calculateSynergies() {

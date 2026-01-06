@@ -109,14 +109,18 @@ export class TowerSystem {
         bolt.lineBetween(startX, startY, target.x, target.y);
         this.scene.tweens.add({ targets: bolt, alpha: 0, duration: 200, onComplete: () => bolt.destroy() });
 
-        // Damage
-        target.hp -= (tower.currentAtk || tower.stats.atk);
+        // Damage & Effect
+        let dmg = (tower.currentAtk || tower.stats.atk);
+        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+
+        target.hp -= dmg;
+        this.applyDebuff(target, tower.stats.debuff);
+        this.createHitEffect(target.x, target.y, tower.element);
+
         this.scene.updateHPBar(target);
         if (target.hp <= 0) {
-            if (target.hpBar) target.hpBar.destroy();
-            target.destroy();
-            this.scene.updateMonsterCount();
-            // If target dies, we can still chain from its last death position? Yes.
+            if (this.scene.enemySystem) this.scene.enemySystem.killMonster(target);
+            else { target.destroy(); this.scene.updateMonsterCount(); }
         }
 
         if (jumps > 1) {
@@ -136,7 +140,7 @@ export class TowerSystem {
         let minDist = range;
         if (!this.scene.monsters) return null;
         this.scene.monsters.getChildren().forEach(m => {
-            if (exclude.includes(m)) return;
+            if (exclude.includes(m) || !m.active) return;
             const d = Phaser.Math.Distance.Between(x, y, m.x, m.y);
             if (d < minDist) {
                 minDist = d;
@@ -146,27 +150,138 @@ export class TowerSystem {
         return nearest;
     }
 
+    applyDebuff(target, debuff) {
+        if (!debuff || !target.active || !target.debuffs) return;
+        if (debuff.chance && Math.random() > debuff.chance) return;
+
+        const existing = target.debuffs.find(d => d.type === debuff.type);
+        if (existing) {
+            existing.duration = debuff.duration;
+        } else {
+            target.debuffs.push({ ...debuff, tick: 0 });
+        }
+    }
+
+    createHitEffect(x, y, element) {
+        const colors = { fire: 0xff5555, ice: 0x33ddff, thunder: 0xffeb3b, leaf: 0x4caf50, gem: 0xe040fb };
+        const color = colors[element] || 0xffffff;
+
+        const g = this.scene.add.graphics();
+        g.setDepth(28);
+        g.setBlendMode(Phaser.BlendModes.ADD); // Make it GLOW
+
+        // 1. Core Flash
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(x, y, 5);
+        g.fillStyle(color, 0.6);
+        g.fillCircle(x, y, 12);
+
+        // 2. Element Specifics
+        if (element === 'fire') {
+            // Expanding Ring & Debris
+            g.lineStyle(2, 0xffaa00, 1);
+            g.strokeCircle(x, y, 15);
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const d = Math.random() * 20;
+                g.fillStyle(0xff5500, 1);
+                g.fillCircle(x + Math.cos(angle) * d, y + Math.sin(angle) * d, 3);
+            }
+        } else if (element === 'ice') {
+            // Shatter lines
+            g.lineStyle(2, 0xaaddff, 0.8);
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI * 2 / 6) * i;
+                g.lineBetween(x, y, x + Math.cos(angle) * 25, y + Math.sin(angle) * 25);
+            }
+        } else if (element === 'thunder') {
+            // Zigzag Sparks
+            g.lineStyle(2, 0xffffaa, 1);
+            for (let i = 0; i < 4; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const d = 10 + Math.random() * 20;
+                let cx = x, cy = y;
+                let ex = x + Math.cos(angle) * d, ey = y + Math.sin(angle) * d;
+                let mx = (cx + ex) / 2 + (Math.random() - 0.5) * 10;
+                let my = (cy + ey) / 2 + (Math.random() - 0.5) * 10;
+                g.beginPath();
+                g.moveTo(cx, cy); g.lineTo(mx, my); g.lineTo(ex, ey);
+                g.strokePath();
+            }
+        } else if (element === 'gem') {
+            // Star/Cross Flash
+            g.lineStyle(3, 0xff00ff, 0.8);
+            g.lineBetween(x - 15, y, x + 15, y);
+            g.lineBetween(x, y - 15, x, y + 15);
+            g.lineStyle(1, 0xffffff, 1);
+            g.lineBetween(x - 10, y - 10, x + 10, y + 10);
+            g.lineBetween(x + 10, y - 10, x - 10, y + 10);
+        } else {
+            // Leaf/Default: Spores
+            g.fillStyle(0x88ff88, 0.8);
+            for (let i = 0; i < 8; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const d = 5 + Math.random() * 15;
+                g.fillCircle(x + Math.cos(angle) * d, y + Math.sin(angle) * d, 2);
+            }
+        }
+
+        // 3. Animation
+        this.scene.tweens.add({
+            targets: g,
+            alpha: 0,
+            scaleX: 1.6,
+            scaleY: 1.6,
+            duration: 350,
+            ease: 'Quad.out',
+            onComplete: () => g.destroy()
+        });
+    }
+
     fireProjectile(tower, target) {
         if (!target || !target.active) return;
 
-        const proj = this.scene.add.circle(tower.x, tower.y, 5, 0xffeb3b);
+        const colors = { fire: 0xff5555, ice: 0x33ddff, thunder: 0xffeb3b, leaf: 0x4caf50, gem: 0xe040fb };
+        const color = colors[tower.element] || 0xffeb3b;
+
+        let proj;
+        if (tower.element === 'ice') {
+            proj = this.scene.add.rectangle(tower.x, tower.y, 8, 8, color);
+            proj.rotation = Math.PI / 4;
+        } else if (tower.element === 'leaf') {
+            proj = this.scene.add.triangle(tower.x, tower.y, 0, 5, 5, 0, 10, 5, color);
+        } else {
+            proj = this.scene.add.circle(tower.x, tower.y, 5, color);
+        }
         proj.setDepth(25);
         this.scene.physics.add.existing(proj);
 
+        const spread = 20;
+        const tx = target.x + (Math.random() * spread - spread / 2);
+        const ty = target.y + (Math.random() * spread - spread / 2);
+
         this.scene.tweens.add({
             targets: proj,
-            x: target.x,
-            y: target.y,
+            x: tx,
+            y: ty,
             duration: 200,
             onComplete: () => {
                 proj.destroy();
+                // Check distance to actual target to see if it 'hit'? 
+                // Since it's homing-ish (short duration), we assume hit if target active.
+                // But visual spread shouldn't affect damage logic for now unless requested.
                 if (target.active) {
-                    target.hp -= (tower.currentAtk || tower.stats.atk);
+                    let dmg = (tower.currentAtk || tower.stats.atk);
+                    if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+
+                    target.hp -= dmg;
                     this.scene.updateHPBar(target);
+                    this.applyDebuff(target, tower.stats.debuff);
+                    this.createHitEffect(target.x, target.y, tower.element);
+
                     if (target.hp <= 0) {
-                        if (target.hpBar) target.hpBar.destroy();
-                        target.destroy();
-                        this.scene.updateMonsterCount();
+                        if (this.scene.enemySystem) this.scene.enemySystem.killMonster(target);
+                        else { target.destroy(); this.scene.updateMonsterCount(); }
                     }
                 }
             }
@@ -174,19 +289,27 @@ export class TowerSystem {
     }
 
     fireLaser(tower, target) {
+        const colors = { fire: 0xff5555, ice: 0x33ddff, thunder: 0xffeb3b, leaf: 0x4caf50, gem: 0xe040fb };
+        const color = colors[tower.element] || 0xef4444;
+
         const laser = this.scene.add.graphics();
         laser.setDepth(25);
-        laser.lineStyle(4, 0xef4444, 1);
+        laser.lineStyle(tower.element === 'gem' ? 6 : 4, color, tower.element === 'gem' ? 0.6 : 1);
         laser.lineBetween(tower.x, tower.y, target.x, target.y);
 
-        this.scene.time.delayedCall(100, () => laser.destroy());
+        this.scene.time.delayedCall(80, () => laser.destroy());
 
-        target.hp -= (tower.currentAtk || tower.stats.atk) * 0.1;
+        let dmg = (tower.currentAtk || tower.stats.atk) * 0.1; // Laser ticks often
+        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+
+        target.hp -= dmg;
+        this.applyDebuff(target, tower.stats.debuff);
+        this.createHitEffect(target.x, target.y, tower.element); // Might be too sparky for laser? Maybe reduce chance.
+
         this.scene.updateHPBar(target);
         if (target.hp <= 0) {
-            if (target.hpBar) target.hpBar.destroy();
-            target.destroy();
-            this.scene.updateMonsterCount();
+            if (this.scene.enemySystem) this.scene.enemySystem.killMonster(target);
+            else { target.destroy(); this.scene.updateMonsterCount(); }
         }
     }
 

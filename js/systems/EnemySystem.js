@@ -27,12 +27,13 @@ export class EnemySystem {
         m.t = 0; m.speed = finalSpeed; m.hp = type.hp; m.maxHp = type.hp;
         m.hpBar = this.scene.add.graphics().setDepth(21);
         m.hpBarWidth = size;
+        m.debuffs = []; // Initialize debuffs
 
         this.updateHPBar(m);
         this.monsters.add(m);
         this.updateMonsterCount();
 
-        // Characteristic animations based on type
+        // Characteristic animations based on type (Keep existing)
         if (type.id === 'slime') {
             this.scene.tweens.add({ targets: g, scaleY: 0.7, scaleX: 1.2, duration: 400, yoyo: true, loop: -1, ease: 'Sine.easeInOut' });
         } else if (type.id === 'spirit') {
@@ -51,19 +52,103 @@ export class EnemySystem {
 
     update(delta) {
         this.monsters.getChildren().forEach(m => {
-            m.t += m.speed * (delta / 16);
-            if (m.t >= 1) {
-                m.destroy(); if (m.hpBar) m.hpBar.destroy();
-                this.updateMonsterCount();
+            if (!m.active) return;
+
+            // Debuff Processing
+            if (!m.debuffs) m.debuffs = [];
+
+            let speedMult = 1;
+            let isStunned = false;
+
+            for (let i = m.debuffs.length - 1; i >= 0; i--) {
+                const d = m.debuffs[i];
+                d.duration -= delta;
+
+                if (d.type === 'slow') speedMult *= d.val;
+                if (d.type === 'stun') isStunned = true;
+                if (d.type === 'poison') {
+                    d.tick = (d.tick || 500) - delta;
+                    if (d.tick <= 0) {
+                        m.hp -= d.val;
+                        d.tick = 500;
+                        this.updateHPBar(m);
+
+                        // Poison Visual (Green Float)
+                        const float = this.scene.add.text(m.x, m.y - 40, `-${d.val}`, { fontSize: '12px', color: '#4ade80', fontStyle: 'bold' }).setOrigin(0.5);
+                        this.scene.tweens.add({ targets: float, y: m.y - 60, alpha: 0, duration: 800, onComplete: () => float.destroy() });
+                    }
+                }
+
+                if (d.duration <= 0) m.debuffs.splice(i, 1);
+            }
+
+            if (m.hp <= 0) {
+                this.killMonster(m);
                 return;
             }
+
+            if (isStunned) speedMult = 0;
+
+            m.t += m.speed * speedMult * (delta / 16);
+            if (m.t >= 1) {
+                this.killMonster(m);
+                return;
+            }
+
             const p = this.path.getPoint(m.t);
             m.setPosition(p.x, p.y);
             if (m.hpBar) {
                 m.hpBar.setPosition(m.x, m.y - 30);
                 this.updateHPBar(m);
             }
+
+            // Status Visuals
+            if (!m.statusG) {
+                m.statusG = this.scene.add.graphics();
+                m.add(m.statusG);
+            }
+            m.statusG.clear();
+            const size = m.hpBarWidth || 40;
+
+            if (isStunned) {
+                // Stun: Yellow Stroke & Icon
+                m.statusG.lineStyle(2, 0xffff00, 1);
+                m.statusG.strokeCircle(0, 0, size / 2 + 2);
+                // Simple bolt shape
+                m.statusG.fillStyle(0xffff00, 1);
+                m.statusG.beginPath();
+                m.statusG.moveTo(0, -size / 2 - 10);
+                m.statusG.lineTo(3, -size / 2 - 5);
+                m.statusG.lineTo(-3, -size / 2 - 5);
+                m.statusG.closePath();
+                m.statusG.fillPath();
+            }
+            else if (m.debuffs.some(d => d.type === 'poison')) {
+                // Poison: Green Bubbles overlay
+                m.statusG.fillStyle(0x4ade80, 0.3);
+                m.statusG.fillCircle(0, 0, size / 2);
+                m.statusG.fillStyle(0x4ade80, 0.8);
+                m.statusG.fillCircle(size / 2, -size / 2, 3);
+            }
+            else if (m.debuffs.some(d => d.type === 'vulnerable')) {
+                // Vulnerable: Purple Brackets/Rect/Cracks
+                m.statusG.lineStyle(2, 0xa855f7, 0.8);
+                const s = size / 2;
+                m.statusG.strokeRect(-s - 2, -s - 2, size + 4, size + 4);
+            }
+            else if (speedMult < 1) {
+                // Slow: Blue Aura
+                m.statusG.fillStyle(0x3b82f6, 0.2);
+                m.statusG.fillCircle(0, 0, size / 2 + 6);
+            }
         });
+    }
+
+    killMonster(m) {
+        if (!m.active) return;
+        m.destroy();
+        if (m.hpBar) m.hpBar.destroy();
+        this.updateMonsterCount();
     }
 
     updateHPBar(m) {

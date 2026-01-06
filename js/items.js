@@ -72,5 +72,31 @@ export const ITEMS = [
         stats: { atk: 15, range: 300, fireRate: 1000, attackType: 'multi', projectileCount: 3 },
         desc: '불안정한 마력을 흩뿌려 여러 적을 동시에 요격합니다.',
         flavor: '"질서는 무너지고, 혼돈만이 남으리라."'
+    },
+
+    // --- 디버프형 (Support/Debuff) ---
+    {
+        id: 'leaf_spore', name: '맹독 포자', shape: [[1, 0], [0, 1]], width: 2, height: 2, element: 'leaf', type: 'artifact',
+        stats: { atk: 10, range: 250, fireRate: 900, attackType: 'normal', debuff: { type: 'poison', val: 5, duration: 4000 } },
+        desc: '강력한 독소를 품은 포자를 날려 적을 중독시킵니다.',
+        flavor: '"숨을 쉴수록 고통스러울 것이다."'
+    },
+    {
+        id: 'thunder_static', name: '마비의 지팡이', shape: [[1], [1]], width: 1, height: 2, element: 'thunder', type: 'artifact',
+        stats: { atk: 8, range: 300, fireRate: 1500, attackType: 'chain', chainCount: 2, debuff: { type: 'stun', duration: 800, chance: 0.5 } },
+        desc: '전류를 방출하여 적을 연쇄적으로 마비시킵니다.',
+        flavor: '"순간의 정적."'
+    },
+    {
+        id: 'gem_curse', name: '공허의 눈', shape: [[1, 1], [1, 1]], width: 2, height: 2, element: 'gem', type: 'artifact',
+        stats: { atk: 15, range: 450, fireRate: 2000, attackType: 'laser', debuff: { type: 'vulnerable', val: 1.5, duration: 3000 } },
+        desc: '적의 약점을 노출시켜 받는 피해를 50% 증가시킵니다.',
+        flavor: '"네 약점은 이미 파악되었다."'
+    },
+    {
+        id: 'ice_shard', name: '서리 파편', shape: [[1]], width: 1, height: 1, element: 'ice', type: 'artifact',
+        stats: { atk: 12, range: 220, fireRate: 1100, attackType: 'normal', debuff: { type: 'slow', val: 0.6, duration: 2500 } },
+        desc: '날카로운 얼음 조각으로 적의 움직임을 크게 둔화시킵니다.',
+        flavor: '"발걸음이 무거워질 것이다."'
     }
 ];
