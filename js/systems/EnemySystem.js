@@ -127,8 +127,7 @@ export class EnemySystem {
 
             m.t += m.speed * speedMult * (delta / 16);
             if (m.t >= 1) {
-                this.killMonster(m);
-                return;
+                m.t -= 1;
             }
 
             const p = this.path.getPoint(m.t);

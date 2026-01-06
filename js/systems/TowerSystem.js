@@ -12,6 +12,31 @@ export class TowerSystem {
         return { dmg, crit };
     }
 
+    showDamageText(x, y, damage, isCrit) {
+        const val = Math.round(damage);
+        if (val <= 0) return;
+
+        const style = isCrit
+            ? { fontSize: '20px', color: '#dc2626', fontStyle: 'bold', stroke: '#fff', strokeThickness: 3 }
+            : { fontSize: '14px', color: '#ffffff', stroke: '#000', strokeThickness: 2 };
+
+        const textStr = isCrit ? `! ${val} !` : `${val}`;
+        const txt = this.scene.add.text(x, y - 20, textStr, style).setOrigin(0.5);
+        txt.setDepth(100);
+
+        this.scene.tweens.add({
+            targets: txt,
+            y: y - 50 - Math.random() * 20,
+            x: x + (Math.random() * 30 - 15),
+            alpha: 0,
+            scaleX: isCrit ? 1.2 : 1.0,
+            scaleY: isCrit ? 1.2 : 1.0,
+            duration: isCrit ? 800 : 600,
+            ease: 'Back.out',
+            onComplete: () => txt.destroy()
+        });
+    }
+
     update(time, placedItems) {
         placedItems.forEach(tower => {
             if (tower.type !== 'artifact' || !tower.el) return;
@@ -123,9 +148,9 @@ export class TowerSystem {
         if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
 
         if (hit.crit) {
-            const txt = this.scene.add.text(target.x, target.y - 30, 'CRIT!', { fontSize: '16px', color: '#dc2626', fontStyle: 'bold', stroke: '#fff', strokeThickness: 2 }).setOrigin(0.5);
-            txt.setDepth(100);
-            this.scene.tweens.add({ targets: txt, y: target.y - 60, alpha: 0, duration: 600, onComplete: () => txt.destroy() });
+            this.showDamageText(target.x, target.y, dmg, true);
+        } else {
+            this.showDamageText(target.x, target.y, dmg, false);
         }
 
         target.hp -= dmg;
@@ -307,11 +332,7 @@ export class TowerSystem {
 
                     if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
 
-                    if (hit.crit) {
-                        const txt = this.scene.add.text(target.x, target.y - 30, 'CRIT!', { fontSize: '18px', color: '#dc2626', fontStyle: 'bold', stroke: '#fff', strokeThickness: 2 }).setOrigin(0.5);
-                        txt.setDepth(100);
-                        this.scene.tweens.add({ targets: txt, y: target.y - 60, alpha: 0, duration: 800, onComplete: () => txt.destroy() });
-                    }
+                    this.showDamageText(target.x, target.y, dmg, hit.crit);
 
                     target.hp -= dmg;
                     this.scene.updateHPBar(target);
@@ -342,6 +363,8 @@ export class TowerSystem {
         let dmg = hit.dmg * 0.1; // Laser ticks often
         if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
 
+        if (Math.random() < 0.3) this.showDamageText(target.x, target.y, dmg, hit.crit);
+
         target.hp -= dmg;
         this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
         this.createHitEffect(target.x, target.y, tower.element); // Might be too sparky for laser? Maybe reduce chance.
@@ -371,7 +394,11 @@ export class TowerSystem {
                 if (!m.active) return;
                 const dist = Phaser.Math.Distance.Between(tower.x, tower.y, m.x, m.y);
                 if (dist <= (tower.range || 250)) {
-                    this.damageMonster(m, tower.currentAtk || tower.stats.atk);
+                    const hit = this.calculateDamage(tower);
+                    let dmg = hit.dmg;
+                    if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+                    this.showDamageText(m.x, m.y, dmg, hit.crit);
+                    this.damageMonster(m, dmg);
                 }
             });
         }
@@ -392,12 +419,13 @@ export class TowerSystem {
                 // Simple: Explode at target's current position if alive, else bomb's position
                 const hitX = target.active ? target.x : bomb.x;
                 const hitY = target.active ? target.y : bomb.y;
-                this.createExplosion(hitX, hitY, tower.stats.aoeRadius || 150, tower.currentAtk || tower.stats.atk);
+                const hit = this.calculateDamage(tower);
+                this.createExplosion(hitX, hitY, tower.stats.aoeRadius || 150, hit.dmg, hit.crit);
             }
         });
     }
 
-    createExplosion(x, y, radius, damage) {
+    createExplosion(x, y, radius, damage, isCrit) {
         // Visual
         const blast = this.scene.add.circle(x, y, 10, 0xffaa00, 0.6);
         blast.setDepth(25);
@@ -414,7 +442,10 @@ export class TowerSystem {
             this.scene.monsters.getChildren().forEach(m => {
                 if (!m.active) return;
                 if (Phaser.Math.Distance.Between(x, y, m.x, m.y) <= radius) {
-                    this.damageMonster(m, damage);
+                    let finalDmg = damage;
+                    if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) finalDmg *= 1.5;
+                    this.showDamageText(m.x, m.y, finalDmg, isCrit);
+                    this.damageMonster(m, finalDmg);
                 }
             });
         }
