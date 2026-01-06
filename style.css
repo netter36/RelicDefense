@@ -1,0 +1,364 @@
+:root {
+    --bg-color: #0d0d0f;
+    --panel-bg: rgba(26, 26, 30, 0.9);
+    --border-color: #4a3a52;
+    --accent-color: #8b5cf6;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --grid-slot-size: 70px;
+    --pixel-font: 'Press Start 2P', cursive;
+    --main-font: 'Orbit', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: var(--main-font);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    background-image:
+        radial-gradient(circle at 50% 50%, #1e1b4b 0%, transparent 70%);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.game-container {
+    width: 1250px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 20px;
+    gap: 10px;
+    position: relative;
+    animation: fadeIn 1s ease-out;
+    overflow: hidden;
+}
+
+.game-header {
+    text-align: center;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.pixel-text {
+    font-family: var(--pixel-font);
+    font-size: 24px;
+    margin-bottom: 5px;
+    /* Reduced from 15px to fit tabs */
+    color: #f59e0b;
+    text-shadow: 2px 2px #000;
+    letter-spacing: 2px;
+}
+
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 5px;
+    width: 100%;
+}
+
+.tag-pill {
+    background: rgba(30, 30, 36, 0.8);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-family: var(--pixel-font);
+    font-size: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.tag-pill:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: var(--accent-color);
+}
+
+.tag-pill.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: #a78bfa;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+.game-main {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    min-height: 0;
+    /* Important for flex child scrolling */
+}
+
+.sidebar {
+    width: 280px;
+    /* Slightly wider to accommodate dual panels */
+    background: var(--panel-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.panel-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.panel-header {
+    background: #1e1e24;
+    padding: 12px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    border-bottom: 2px solid var(--border-color);
+    color: #a78bfa;
+    font-family: var(--pixel-font);
+    font-size: 10px;
+}
+
+.effect-list,
+.stats-list {
+    padding: 15px;
+}
+
+.no-effects {
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.stat-item .value {
+    color: #10b981;
+    font-family: var(--pixel-font);
+    font-size: 10px;
+}
+
+.monster-stat {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.monster-stat .value {
+    color: #ef4444;
+}
+
+.item-editor {
+    margin-top: auto;
+    padding: 0;
+    background: #1e1e24;
+    border-top: 2px solid var(--border-color);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.shop-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 0;
+    overflow-y: auto;
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.shop-item {
+    width: 100%;
+    height: auto;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    gap: 15px;
+    border-radius: 0;
+}
+
+.shop-item:hover {
+    background: rgba(245, 158, 11, 0.1);
+    transform: none;
+    box-shadow: inset 4px 0 0 #f59e0b;
+}
+
+/* Custom Scrollbar for Shop and Sidebar */
+.shop-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.shop-grid::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.shop-grid::-webkit-scrollbar-thumb {
+    background: #4a3a52;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.shop-grid::-webkit-scrollbar-thumb:hover {
+    background: #6d4a7d;
+}
+
+/* Ensure sidebar also has the new scrollbar style */
+.sidebar ::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar ::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 3px;
+}
+
+.shop-item:active {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.inventory-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+#phaser-game-container {
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
+    border: 3px solid #584a63;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0d0d0f;
+}
+
+.controls-hint {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: var(--text-secondary);
+    background: rgba(13, 13, 15, 0.8);
+    padding: 10px 20px;
+    border-radius: 20px 20px 0 0;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    z-index: 100;
+}
+
+.key {
+    background: #2d2d35;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #f59e0b;
+    border: 1px solid #4a4a55;
+}
+
+/* Tooltip Styles */
+.tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: rgba(15, 15, 18, 0.95);
+    border: 1px solid #8b5cf6;
+    padding: 15px;
+    width: 200px;
+    z-index: 1000;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+}
+
+.tooltip.hidden {
+    display: none;
+}
+
+.tooltip-name {
+    font-weight: bold;
+    color: #f59e0b;
+    margin-bottom: 5px;
+}
+
+.tooltip-desc {
+    font-size: 13px;
+    color: #cbd5e1;
+    margin-top: 10px;
+    line-height: 1.4;
+}
+
+/* Synergy (Combo) UI Polish */
+.combo-item {
+    background: rgba(45, 45, 53, 0.6);
+    border-left: 4px solid var(--accent-color);
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 0 4px 4px 0;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.combo-name {
+    font-size: 10px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-family: var(--pixel-font);
+    color: #f59e0b;
+}
+
+.combo-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}

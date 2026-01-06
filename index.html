@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sephiria Inventory System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbit&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+</head>
+
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1 class="pixel-text">SEPHIRIA INVENTORY</h1>
+        </header>
+
+        <main class="game-main">
+            <!-- Left Sidebar: Integrated Info Panel -->
+            <aside class="sidebar side-left" style="gap: 10px; display: flex; flex-direction: column;">
+                <section class="panel-container" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                    <div class="panel-header">시너지 정보</div>
+                    <div id="combo-list" class="effect-list" style="flex: 1; overflow-y: auto;">
+                        <div class="no-effects">활성화된 콤보 없음</div>
+                    </div>
+                </section>
+
+                <section class="panel-container" style="border-top: 2px solid var(--border-color);">
+                    <div class="panel-header">수비 본부 정보</div>
+                    <div class="stats-list">
+                        <div class="stat-item">
+                            <span>전술력 (Tactics)</span>
+                            <span id="stat-atk" class="value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>연사 보너스</span>
+                            <span id="stat-fire-bonus" class="value">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>배치된 유물</span>
+                            <span id="stat-artifacts" class="value">0</span>
+                        </div>
+                        <div class="stat-item monster-stat">
+                            <span>현재 몬스터 수</span>
+                            <span id="monster-count" class="value">0</span>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Center: Phaser Game Canvas -->
+            <section class="inventory-section">
+                <div id="phaser-game-container"></div>
+                <div class="controls-hint">
+                    <span class="key">드래그</span> 이동 | <span class="key">우클릭</span> 삭제 | <span class="key">R</span> 회전
+                </div>
+            </section>
+
+            <!-- Right Sidebar: Item Creation -->
+            <aside class="sidebar side-right">
+                <div class="item-editor" style="height: 100%;">
+                    <div class="panel-header">아이템 생성</div>
+
+
+
+                    <div id="shop-tags" class="tag-container"
+                        style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <!-- Tag pills injected here -->
+                    </div>
+
+                    <div id="item-shop" class="shop-grid">
+                        <!-- Shop items injected here -->
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Tooltip -->
+        <div id="tooltip" class="tooltip hidden">
+            <div class="tooltip-name">Item Name</div>
+            <div class="tooltip-rarity">Legendary</div>
+            <hr>
+            <div class="tooltip-desc">Item description goes here.</div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
