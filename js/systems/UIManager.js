@@ -133,6 +133,17 @@ export class UIManager {
             'fire': '화염', 'ice': '냉기', 'thunder': '전격', 'leaf': '대지', 'gem': '심연', 'tablet': '석판', 'artifact': '아티팩트'
         };
 
+        const ATTACK_TYPE_MAP = {
+            normal: '일반',
+            rapid: '연사',
+            laser: '레이저',
+            nova: '파동',
+            bomb: '폭발',
+            chain: '연쇄',
+            multi: '다중',
+            tablet: '버프'
+        };
+
         ITEMS.filter(item => {
             return this.activeTag === '전체' || [TAG_MAP[item.element], TAG_MAP[item.type]].filter(Boolean).includes(this.activeTag);
         }).forEach(item => {
@@ -154,13 +165,14 @@ export class UIManager {
             shapeHtml += '</div>';
 
             div.innerHTML = `
-                <div class="shop-item-icon" style="background:#2a2a2e; display:flex; justify-content:center; align-items:center;">
+                <div class="shop-item-icon">
                     ${shapeHtml}
                 </div>
                 <div class="shop-item-info">
                     <div class="shop-item-name">${item.name}</div>
-                    <div class="shop-item-desc" style="font-size:0.7em; opacity:0.8; margin-top:4px; display:flex; align-items:start;">
-                        <span>${this.getDynamicDesc(item)}</span>
+                    <div class="shop-item-meta">
+                        <span class="shop-item-type">${TAG_MAP[item.element] || '기본'}</span>
+                        <span class="shop-item-attack-type">${ATTACK_TYPE_MAP[item.stats?.attackType || item.type] || '특수형'}</span>
                     </div>
                 </div>
             `;
@@ -238,10 +250,25 @@ export class UIManager {
 
     updateTooltipPos(e) {
         if (!this.tooltip) return;
+
         const x = e.pageX || (e.event ? e.event.pageX : 0);
         const y = e.pageY || (e.event ? e.event.pageY : 0);
+
+        // Postion tooltip nicely
+        const tooltipHeight = this.tooltip.offsetHeight || 150; // Estimate if not rendered yet
+        const offset = 20;
+
         this.tooltip.style.left = (x + 15) + 'px';
-        this.tooltip.style.top = (y + 15) + 'px';
+
+        // Default to showing above the mouse to avoid blocking view of list items at bottom
+        let topPos = y - tooltipHeight - offset;
+
+        // If it goes off the top of the screen, show it below
+        if (topPos < 10) {
+            topPos = y + offset;
+        }
+
+        this.tooltip.style.top = topPos + 'px';
     }
 
     hideTooltip() {
