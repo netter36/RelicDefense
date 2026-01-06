@@ -1,5 +1,6 @@
 import { ITEMS } from '../items.js';
-import { GRID_WIDTH, GRID_HEIGHT, SLOT_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT, THEME, ELEMENT_COLORS, SYNERGIES } from '../constants.js';
+import { GRID_WIDTH, GRID_HEIGHT, SLOT_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT, THEME, SYNERGIES } from '../constants.js';
+import { RenderUtils } from '../utils/RenderUtils.js';
 
 export class GridSystem {
     constructor(scene, uiManager) {
@@ -15,7 +16,7 @@ export class GridSystem {
 
     drawBackground() {
         const g = this.scene.add.graphics();
-        g.lineStyle(1, 0xffffff, 0.05);
+        g.lineStyle(1, 0xffffff, 0.2);
         g.fillStyle(0x1a1a1e, 0.6);
         for (let y = 0; y < GRID_HEIGHT; y++) {
             for (let x = 0; x < GRID_WIDTH; x++) {
@@ -177,7 +178,7 @@ export class GridSystem {
             }
         });
 
-        this.renderProceduralShape(container, item);
+        RenderUtils.renderProceduralShape(this.scene, container, item);
         this.snap(item);
         this.setGrid(item, item);
         this.calculateSynergies();
@@ -203,205 +204,7 @@ export class GridSystem {
         this.calculateSynergies();
     }
 
-    renderProceduralShape(container, data) {
-        container.removeAll(true);
 
-        const baseG = this.scene.add.graphics();
-        const detailG = this.scene.add.graphics();
-
-        container.add(baseG);
-        container.add(detailG);
-
-        const color = ELEMENT_COLORS[data.element] || 0x64748b;
-        const alpha = 0.9; // Higher base alpha
-        const check = (x, y) => data.shape[y] && data.shape[y][x];
-
-        // Draw Base
-        data.shape.forEach((row, dy) => {
-            row.forEach((v, dx) => {
-                if (v) {
-                    const ox = dx * SLOT_SIZE - (data.width * SLOT_SIZE) / 2;
-                    const oy = dy * SLOT_SIZE - (data.height * SLOT_SIZE) / 2;
-
-                    // Seamless Fill Base
-                    baseG.fillStyle(color, alpha);
-                    baseG.fillRect(ox, oy, SLOT_SIZE, SLOT_SIZE);
-
-                    // Contour Outline Logic
-                    baseG.lineStyle(2, 0xffffff, 0.8);
-                    if (!check(dx, dy - 1)) { baseG.beginPath(); baseG.moveTo(ox, oy); baseG.lineTo(ox + SLOT_SIZE, oy); baseG.stroke(); }
-                    if (!check(dx, dy + 1)) { baseG.beginPath(); baseG.moveTo(ox, oy + SLOT_SIZE); baseG.lineTo(ox + SLOT_SIZE, oy + SLOT_SIZE); baseG.stroke(); }
-                    if (!check(dx - 1, dy)) { baseG.beginPath(); baseG.moveTo(ox, oy); baseG.lineTo(ox, oy + SLOT_SIZE); baseG.stroke(); }
-                    if (!check(dx + 1, dy)) { baseG.beginPath(); baseG.moveTo(ox + SLOT_SIZE, oy); baseG.lineTo(ox + SLOT_SIZE, oy + SLOT_SIZE); baseG.stroke(); }
-                }
-            });
-        });
-
-        this.renderUniqueDetail(detailG, data);
-
-        // Synergy Glow (Inner Border - Color Coded)
-        if (data.isSynergetic) {
-            const glow = this.scene.add.graphics();
-            container.add(glow); // Add on TOP for Inner Border effect
-
-            const synColors = {
-                fire: 0xff5555,   // Red-Orange
-                ice: 0x33ddff,    // Bright Cyan
-                thunder: 0xffeb3b,// Yellow
-                leaf: 0x4caf50,   // Green
-                gem: 0xe040fb     // Purple
-            };
-            const glowColor = synColors[data.element] || 0xffd700;
-
-            glow.lineStyle(4, glowColor, 1.0);
-
-            data.shape.forEach((row, dy) => {
-                row.forEach((v, dx) => {
-                    if (v) {
-                        const ox = dx * SLOT_SIZE - (data.width * SLOT_SIZE) / 2;
-                        const oy = dy * SLOT_SIZE - (data.height * SLOT_SIZE) / 2;
-
-                        // Draw glow ONLY on outer edges
-                        if (!check(dx, dy - 1)) { glow.beginPath(); glow.moveTo(ox, oy); glow.lineTo(ox + SLOT_SIZE, oy); glow.stroke(); }
-                        if (!check(dx, dy + 1)) { glow.beginPath(); glow.moveTo(ox, oy + SLOT_SIZE); glow.lineTo(ox + SLOT_SIZE, oy + SLOT_SIZE); glow.stroke(); }
-                        if (!check(dx - 1, dy)) { glow.beginPath(); glow.moveTo(ox, oy); glow.lineTo(ox, oy + SLOT_SIZE); glow.stroke(); }
-                        if (!check(dx + 1, dy)) { glow.beginPath(); glow.moveTo(ox + SLOT_SIZE, oy); glow.lineTo(ox + SLOT_SIZE, oy + SLOT_SIZE); glow.stroke(); }
-                    }
-                });
-            });
-        }
-    }
-
-    renderUniqueDetail(g, data) {
-        const w = data.width * SLOT_SIZE;
-        const h = data.height * SLOT_SIZE;
-
-        g.fillStyle(0xffffff, 0.9);
-        g.lineStyle(2, 0xffffff, 0.9);
-
-        // Common symbol helper
-        const drawSymbol = (type, x, y, scale = 1) => {
-            const sz = SLOT_SIZE * 0.4 * scale;
-            if (type === 'fire') g.fillTriangle(x, y - sz, x - sz, y + sz * 0.8, x + sz, y + sz * 0.8);
-            if (type === 'ice') {
-                g.beginPath(); g.moveTo(x, y - sz); g.lineTo(x + sz, y); g.lineTo(x, y + sz); g.lineTo(x - sz, y); g.closePath(); g.fill();
-            }
-            if (type === 'thunder') {
-                g.beginPath(); g.moveTo(x + sz * 0.4, y - sz); g.lineTo(x - sz * 0.2, y - sz * 0.1); g.lineTo(x + sz * 0.6, y - sz * 0.1);
-                g.lineTo(x - sz * 0.4, y + sz); g.lineTo(x + sz * 0.2, y + sz * 0.1); g.lineTo(x - sz * 0.6, y + sz * 0.1); g.closePath(); g.fill();
-            }
-            if (type === 'leaf') g.fillCircle(x, y, sz * 0.8);
-            if (type === 'gem') {
-                const r = sz * 0.7; g.fillRect(x - r, y - r, r * 2, r * 2);
-                const r2 = sz * 0.9; g.beginPath(); g.moveTo(x, y - r2); g.lineTo(x + r2, y); g.lineTo(x, y + r2); g.lineTo(x - r2, y); g.closePath(); g.fill();
-            }
-        };
-
-        if (data.type === 'tablet') {
-            // Tech patterns on corners
-            g.fillStyle(0x000000, 0.3);
-            g.fillRect(-w / 2 + 4, -h / 2 + 4, 12, 12);
-            g.fillRect(w / 2 - 16, h / 2 - 16, 12, 12);
-            g.lineStyle(2, 0xffffff, 0.3);
-            g.strokeRect(-w / 2 + 8, -h / 2 + 8, w - 16, h - 16);
-            return;
-        }
-
-        switch (data.id) {
-            case 'thunder_rapier': // 1x2 Vertical
-                g.beginPath();
-                g.moveTo(0, -h / 2 + 10); g.lineTo(8, -h / 4); g.lineTo(4, h / 2 - 20); g.lineTo(0, h / 2 - 5); g.lineTo(-4, h / 2 - 20); g.lineTo(-8, -h / 4);
-                g.closePath(); g.fill();
-                g.strokeCircle(0, h / 2 - 25, 12);
-                g.lineBetween(-12, h / 2 - 25, 12, h / 2 - 25);
-                break;
-
-            case 'thunder_heavy': // 2x2 [[1,1],[1,0]] Top Bar + Bot Left
-                // Hammer Head (Top Row)
-                g.fillRect(-w / 2 + 10, -h / 2 + 10, w - 20, 30);
-                // Handle (Left Col)
-                g.fillRect(-w / 4 - 10, -h / 2 + 40, 20, h - 50);
-                // Detail
-                g.lineStyle(2, 0xaaddff, 0.8);
-                g.lineBetween(-w / 4, -h / 2 + 25, w / 4, -h / 2 + 25); // on head
-                g.lineStyle(2, 0xffffff, 0.9);
-                break;
-
-            case 'fire_laser': // 3x1 Horizontal
-                g.fillRect(-w / 2 + 15, -10, w - 30, 20);
-                g.lineBetween(-w / 2 + 30, -10, -w / 2 + 30, 10);
-                g.lineBetween(-w / 2 + 50, -10, -w / 2 + 50, 10);
-                g.fillCircle(-w / 2 + 15, 0, 8);
-                break;
-
-            case 'gem_laser': // 2x2 [[1,1],[0,1]] Top Bar + Bot Right
-                // Elbow Connectors
-                g.lineStyle(4, 0xffffff, 0.9);
-                g.lineBetween(-w / 2 + 20, -h / 4, w / 2 - 20, -h / 4); // Top Horiz
-                g.lineBetween(w / 4, -h / 4, w / 4, h / 2 - 20); // Right Vert
-                g.fillStyle(0xffffff, 1);
-                g.fillCircle(w / 4, -h / 4, 12); // Joint
-                g.fillCircle(-w / 2 + 20, -h / 4, 8); // Start
-                g.fillCircle(w / 4, h / 2 - 20, 8); // End
-                break;
-
-            case 'ice_nova': // 2x1
-                g.strokeCircle(0, 0, 20);
-                g.lineBetween(0, -25, 0, 25);
-                g.lineBetween(-20, -15, 20, 15);
-                g.lineBetween(20, -15, -20, 15);
-                break;
-
-            case 'leaf_blast': // 2x2 [[1,0],[1,1]] Top Left + Bot Bar
-                // Roots on Bottom
-                g.lineStyle(3, 0x88ff88, 0.8);
-                g.beginPath();
-                g.moveTo(-w / 2 + 10, h / 4);
-                g.lineTo(0, h / 2 - 5);
-                g.lineTo(w / 2 - 10, h / 4);
-                g.stroke();
-                // Flower on Top Left
-                g.fillStyle(0xffffff, 0.9);
-                g.fillCircle(-w / 4, -h / 4, 15);
-                g.lineStyle(2, 0xffffff, 0.9);
-                g.lineBetween(-w / 4, -h / 4, -w / 4, h / 4); // Stem
-                break;
-
-            case 'fire_cannon': // 2x1
-                g.strokeCircle(0, 0, 22);
-                g.fillRect(-12, -12, 24, 24);
-                g.strokeRect(-15, -30, 30, 10);
-                break;
-
-            case 'leaf_bow': // 1x3 Vertical
-                g.beginPath(); g.moveTo(-5, -h / 2 + 15); g.lineTo(20, -h / 4); g.lineTo(10, 0); g.lineTo(20, h / 4); g.lineTo(-5, h / 2 - 15); g.stroke();
-                g.lineBetween(-5, -h / 2 + 15, -5, h / 2 - 15);
-                break;
-
-            case 'judgement_prism': // 2x2 [[1,0],[1,1]] Top Left + Bot Bar
-                // Base on Bottom
-                g.fillRect(-w / 2 + 20, h / 4 - 5, w - 40, 10);
-                // Floating Prism Top Left
-                g.beginPath();
-                g.moveTo(-w / 4, -h / 2 + 20); g.lineTo(-w / 4 + 15, -h / 4 + 20); g.lineTo(-w / 4 - 15, -h / 4 + 20);
-                g.closePath(); g.stroke();
-                // Connection
-                g.lineBetween(-w / 4, -h / 4 + 20, -w / 4, h / 4 - 5);
-                break;
-
-            case 'chaos_orb': // 2x2 [[1,1],[1,0]] Top Bar + Bot Left
-                g.strokeCircle(-w / 4, -h / 4, 10); // Top Left
-                g.strokeCircle(w / 4, -h / 4, 10); // Top Right
-                g.strokeCircle(-w / 4, h / 4, 10); // Bot Left
-                g.lineBetween(-w / 4 + 10, -h / 4, w / 4 - 10, -h / 4);
-                g.lineBetween(-w / 4, -h / 4 + 10, -w / 4, h / 4 - 10);
-                g.lineBetween(w / 4, -h / 4 + 7, -w / 4 + 7, h / 4 - 7); // Diagonal
-                break;
-
-            default:
-                drawSymbol(data.element, 0, 0, 1.5);
-        }
-    }
 
 
 
@@ -461,7 +264,7 @@ export class GridSystem {
             // Success
             this.snap(item);
             this.setGrid(item, item);
-            this.renderProceduralShape(item.el, item);
+            RenderUtils.renderProceduralShape(this.scene, item.el, item);
             this.calculateSynergies();
 
             // Re-show range if hovering
@@ -492,7 +295,7 @@ export class GridSystem {
 
     calculateSynergies() {
         const { activeCombos } = this._calculateSynergiesLogic(this.placedItems, SLOT_SIZE);
-        this.placedItems.forEach(item => { if (item.el) this.renderProceduralShape(item.el, item); });
+        this.placedItems.forEach(item => { if (item.el) RenderUtils.renderProceduralShape(this.scene, item.el, item); });
         const totalAtk = this.placedItems.reduce((acc, i) => acc + (i.currentAtk || 0), 0);
         this.uiManager.updateHUD({ atk: Math.round(totalAtk), fireBonus: 0, artifacts: 0, combos: activeCombos });
         this.uiManager.renderItems();

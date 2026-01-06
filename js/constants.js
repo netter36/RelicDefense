@@ -48,3 +48,38 @@ export const MONSTER_TYPES = [
     { id: 'spirit', name: '영혼', hp: 120, speed: 0.0012, color: 0xd8b4fe, size: 30, weight: 30 },
     { id: 'golem', name: '골렘', hp: 600, speed: 0.0002, color: 0x71717a, size: 70, weight: 10 }
 ];
+
+// 시너지 보너스 상수
+export const SYNERGY_BONUSES = {
+    FIRE_POWER: 1.2,          // 공격력 +20%
+    ICE_FREEZE: 1.25,         // 디버프 효율 +25%
+    THUNDER_RAPID: 0.7,       // 연사 속도 -30%
+    LEAF_REGEN: 1.15,         // 사거리 +15%
+    GEM_LEGEND_CRIT: 0.1      // 치명타 확률 +10%
+};
+
+// 전투 기본값
+export const COMBAT_DEFAULTS = {
+    DEFAULT_RANGE: 250,
+    DEFAULT_FIRE_RATE: 1000,
+    LASER_DAMAGE_MULT: 0.1,
+    CRIT_DAMAGE_MULT: 2,
+    VULNERABLE_MULT: 1.5,
+    CHAIN_JUMP_RANGE: 200
+};
+
+// 난이도 스케일링
+export const DIFFICULTY_SCALING = {
+    HP_PER_MINUTE: 0.8,       // 분당 HP 증가율 80%
+    BASE_SPAWN_INTERVAL: 2500,
+    MIN_SPAWN_INTERVAL: 400,
+    SPAWN_RATE_FACTOR: 0.6
+};
+
+// 시각 효과 설정
+export const VISUAL_SETTINGS = {
+    PROJECTILE_SPREAD: 20,
+    DAMAGE_TEXT_DURATION: 600,
+    CRIT_TEXT_DURATION: 800,
+    HIT_EFFECT_DURATION: 250
+};

@@ -1,4 +1,5 @@
 import { ATTACK_TYPES } from '../constants.js';
+import { RenderUtils } from '../utils/RenderUtils.js';
 
 export class TowerSystem {
     constructor(scene) {
@@ -212,105 +213,13 @@ export class TowerSystem {
     }
 
     createHitEffect(x, y, element) {
-        const colors = { fire: 0xff5555, ice: 0x33ddff, thunder: 0xffeb3b, leaf: 0x4caf50, gem: 0xe040fb };
-        const color = colors[element] || 0xffffff;
-
-        const g = this.scene.add.graphics();
-        g.setDepth(28);
-        g.setBlendMode(Phaser.BlendModes.ADD); // Make it GLOW
-
-        // 1. Core Flash
-        g.fillStyle(0xffffff, 1);
-        g.fillCircle(x, y, 5);
-        g.fillStyle(color, 0.6);
-        g.fillCircle(x, y, 12);
-
-        // 2. Element Specifics
-        if (element === 'fire') {
-            // Simple Fire Ring
-            g.lineStyle(2, 0xffaa00, 1);
-            g.strokeCircle(x, y, 14);
-        } else if (element === 'ice') {
-            // Simple Cross
-            g.lineStyle(2, 0xaaddff, 1);
-            g.lineBetween(x - 8, y - 8, x + 8, y + 8);
-            g.lineBetween(x - 8, y + 8, x + 8, y - 8);
-        } else if (element === 'thunder') {
-            // Square Flash
-            g.lineStyle(2, 0xffffaa, 1);
-            g.strokeRect(x - 6, y - 6, 12, 12);
-        } else if (element === 'gem') {
-            // Plus Flash
-            g.lineStyle(2, 0xff00ff, 1);
-            g.lineBetween(x - 10, y, x + 10, y);
-            g.lineBetween(x, y - 10, x, y + 10);
-        } else {
-            // Leaf Circle
-            g.lineStyle(2, 0x88ff88, 1);
-            g.strokeCircle(x, y, 12);
-        }
-
-        // 3. Animation
-        this.scene.tweens.add({
-            targets: g,
-            alpha: 0,
-            duration: 250,
-            onComplete: () => g.destroy()
-        });
+        RenderUtils.createHitEffect(this.scene, x, y, element);
     }
 
     fireProjectile(tower, target) {
         if (!target || !target.active) return;
 
-        const colors = { fire: 0xff5555, ice: 0x33ddff, thunder: 0xffeb3b, leaf: 0x4caf50, gem: 0xe040fb };
-        const color = colors[tower.element] || 0xffeb3b;
-
-        const proj = this.scene.add.graphics();
-        proj.x = tower.x;
-        proj.y = tower.y;
-        proj.setDepth(25);
-        proj.setBlendMode(Phaser.BlendModes.ADD);
-        this.scene.physics.add.existing(proj);
-
-        if (tower.element === 'ice') {
-            // Flashy Snowflake (Large)
-            proj.lineStyle(3, 0x33ddff, 1);
-            proj.lineBetween(0, -14, 0, 14);
-            proj.lineBetween(-12, -7, 12, 7);
-            proj.lineBetween(-12, 7, 12, -7);
-            proj.fillStyle(0xffffff, 1);
-            proj.fillCircle(0, 0, 5);
-            this.scene.tweens.add({ targets: proj, angle: 360, duration: 400, repeat: -1 });
-        } else if (tower.element === 'fire') {
-            // Sun-like (Large)
-            proj.fillStyle(0xff3300, 0.5); proj.fillCircle(0, 0, 14);
-            proj.fillStyle(0xff8800, 0.8); proj.fillCircle(0, 0, 9);
-            proj.fillStyle(0xffffaa, 1); proj.fillCircle(0, 0, 5);
-        } else if (tower.element === 'gem') {
-            // Mystic 4-Point Star (Large)
-            proj.lineStyle(3, 0xe040fb, 1);
-            proj.strokeCircle(0, 0, 10);
-            proj.fillStyle(0xffffff, 1);
-            proj.beginPath();
-            proj.moveTo(0, -12); proj.lineTo(3, -3); proj.lineTo(12, 0); proj.lineTo(3, 3);
-            proj.moveTo(0, 12); proj.lineTo(-3, 3); proj.lineTo(-12, 0); proj.lineTo(-3, -3);
-            proj.closePath();
-            proj.fill();
-            this.scene.tweens.add({ targets: proj, angle: -360, duration: 600, repeat: -1 });
-        } else if (tower.element === 'leaf') {
-            // 4-Petal Flower (Large)
-            proj.fillStyle(0x4caf50, 1);
-            proj.fillCircle(-6, -6, 5); proj.fillCircle(6, -6, 5);
-            proj.fillCircle(-6, 6, 5); proj.fillCircle(6, 6, 5);
-            proj.fillStyle(0xffffaa, 1); proj.fillCircle(0, 0, 5);
-            this.scene.tweens.add({ targets: proj, angle: 360, duration: 800, repeat: -1 });
-        } else {
-            // Charged Thunder Box (Large)
-            proj.fillStyle(0xffff00, 0.8); proj.fillCircle(0, 0, 8);
-            proj.lineStyle(2, 0xffffff, 1);
-            proj.strokeRect(-6, -6, 12, 12);
-            this.scene.tweens.add({ targets: proj, angle: 360, duration: 200, repeat: -1 });
-        }
+        const proj = RenderUtils.createProjectile(this.scene, tower.x, tower.y, tower.element);
 
         const spread = 20;
         const tx = target.x + (Math.random() * spread - spread / 2);
