@@ -1,4 +1,5 @@
-import { MONSTER_TYPES } from '../constants.js';
+import { DIFFICULTY_CONFIG } from '../constants.js';
+import { MONSTER_TYPES } from '../data/monsters.js';
 import { RenderUtils } from '../utils/RenderUtils.js';
 
 export class EnemySystem {
@@ -73,10 +74,13 @@ export class EnemySystem {
     update(delta) {
         // Difficulty Logic
         this.gameTime += delta;
-        this.difficulty = 1 + (this.gameTime / 60000) * 0.8; // +80% HP per minute
+        this.difficulty = 1 + (this.gameTime / DIFFICULTY_CONFIG.GAME_MINUTE_MS) * DIFFICULTY_CONFIG.HP_PER_MINUTE_RATE;
 
-        const baseInterval = 2500;
-        const currentInterval = Math.max(400, baseInterval / (1 + (this.difficulty - 1) * 0.6));
+        const baseInterval = DIFFICULTY_CONFIG.BASE_SPAWN_INTERVAL;
+        const currentInterval = Math.max(
+            DIFFICULTY_CONFIG.MIN_SPAWN_INTERVAL,
+            baseInterval / (1 + (this.difficulty - 1) * DIFFICULTY_CONFIG.SPAWN_DECAY_FACTOR)
+        );
 
         this.spawnTimer -= delta;
         if (this.spawnTimer <= 0) {

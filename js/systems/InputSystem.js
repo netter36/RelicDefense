@@ -1,4 +1,4 @@
-import { ITEMS } from '../items.js';
+import { ITEMS } from '../data/items.js';
 import { SLOT_SIZE } from '../constants.js';
 
 export class InputSystem {

@@ -42,13 +42,6 @@ export const ELEMENT_COLORS = {
     tablet: 0x64748b
 };
 
-export const MONSTER_TYPES = [
-    { id: 'slime', name: '슬라임', hp: 80, speed: 0.001, color: 0x10b981, size: 40, weight: 40 },
-    { id: 'guardian', name: '가디언', hp: 300, speed: 0.0004, color: 0x6366f1, size: 55, weight: 20 },
-    { id: 'spirit', name: '영혼', hp: 120, speed: 0.0012, color: 0xd8b4fe, size: 30, weight: 30 },
-    { id: 'golem', name: '골렘', hp: 600, speed: 0.0002, color: 0x71717a, size: 70, weight: 10 }
-];
-
 // 시너지 보너스 상수
 export const SYNERGY_BONUSES = {
     FIRE_POWER: 1.2,          // 공격력 +20%
@@ -58,28 +51,35 @@ export const SYNERGY_BONUSES = {
     GEM_LEGEND_CRIT: 0.1      // 치명타 확률 +10%
 };
 
-// 전투 기본값
-export const COMBAT_DEFAULTS = {
+// 전투 설정 (Combat Configuration)
+export const COMBAT_CONFIG = {
     DEFAULT_RANGE: 250,
     DEFAULT_FIRE_RATE: 1000,
     LASER_DAMAGE_MULT: 0.1,
     CRIT_DAMAGE_MULT: 2,
     VULNERABLE_MULT: 1.5,
-    CHAIN_JUMP_RANGE: 200
+    CHAIN_JUMP_RANGE: 200,
+    BOMB_RADIUS: 150,
+    NOVA_RADIUS: 250
 };
 
-// 난이도 스케일링
-export const DIFFICULTY_SCALING = {
-    HP_PER_MINUTE: 0.8,       // 분당 HP 증가율 80%
+// 난이도 및 스폰 설정 (Difficulty & Spawn Configuration)
+export const DIFFICULTY_CONFIG = {
+    HP_PER_MINUTE_RATE: 0.8,       // 분당 HP 증가율 80%
     BASE_SPAWN_INTERVAL: 2500,
     MIN_SPAWN_INTERVAL: 400,
-    SPAWN_RATE_FACTOR: 0.6
+    SPAWN_DECAY_FACTOR: 0.6,       // 난이도에 따른 스폰 주기 감소 계수
+    GAME_MINUTE_MS: 60000
 };
 
-// 시각 효과 설정
-export const VISUAL_SETTINGS = {
+// UI 및 시각 효과 설정 (UI & Visual Configuration)
+export const UI_CONFIG = {
+    GRID_LINE_ALPHA: 0.2,
+    GRID_BG_ALPHA: 0.6,
     PROJECTILE_SPREAD: 20,
     DAMAGE_TEXT_DURATION: 600,
     CRIT_TEXT_DURATION: 800,
-    HIT_EFFECT_DURATION: 250
+    HIT_EFFECT_DURATION: 250,
+    TOOLTIP_OFFSET: 15
 };
+

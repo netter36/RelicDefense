@@ -1,4 +1,4 @@
-import { ATTACK_TYPES } from '../constants.js';
+import { ATTACK_TYPES, COMBAT_CONFIG, UI_CONFIG } from '../constants.js';
 import { RenderUtils } from '../utils/RenderUtils.js';
 
 export class TowerSystem {
@@ -9,7 +9,7 @@ export class TowerSystem {
     calculateDamage(tower) {
         let dmg = (tower.currentAtk || tower.stats.atk);
         const crit = (tower.critChance && Math.random() < tower.critChance);
-        if (crit) dmg *= 2;
+        if (crit) dmg *= COMBAT_CONFIG.CRIT_DAMAGE_MULT;
         return { dmg, crit };
     }
 
@@ -32,7 +32,7 @@ export class TowerSystem {
             alpha: 0,
             scaleX: isCrit ? 1.2 : 1.0,
             scaleY: isCrit ? 1.2 : 1.0,
-            duration: isCrit ? 800 : 600,
+            duration: isCrit ? UI_CONFIG.CRIT_TEXT_DURATION : UI_CONFIG.DAMAGE_TEXT_DURATION,
             ease: 'Back.out',
             onComplete: () => txt.destroy()
         });
@@ -146,7 +146,7 @@ export class TowerSystem {
         // Damage & Effect
         const hit = this.calculateDamage(tower);
         let dmg = hit.dmg;
-        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
 
         if (hit.crit) {
             this.showDamageText(target.x, target.y, dmg, true);
@@ -166,7 +166,7 @@ export class TowerSystem {
 
         if (jumps > 1) {
             // Find next target from CURRENT target pos
-            const range = 200; // Chain jump range
+            const range = COMBAT_CONFIG.CHAIN_JUMP_RANGE; // Chain jump range
             const next = this.getNearestMonster(target.x, target.y, range, hitList); // Need exclude list
             if (next) {
                 this.scene.time.delayedCall(100, () => {
@@ -239,7 +239,7 @@ export class TowerSystem {
                     const hit = this.calculateDamage(tower);
                     let dmg = hit.dmg;
 
-                    if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+                    if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
 
                     this.showDamageText(target.x, target.y, dmg, hit.crit);
 
@@ -269,8 +269,8 @@ export class TowerSystem {
         this.scene.time.delayedCall(80, () => laser.destroy());
 
         const hit = this.calculateDamage(tower);
-        let dmg = hit.dmg * 0.1; // Laser ticks often
-        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+        let dmg = hit.dmg * COMBAT_CONFIG.LASER_DAMAGE_MULT; // Laser ticks often
+        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
 
         if (Math.random() < 0.3) this.showDamageText(target.x, target.y, dmg, hit.crit);
 
@@ -305,7 +305,7 @@ export class TowerSystem {
                 if (dist <= (tower.range || 250)) {
                     const hit = this.calculateDamage(tower);
                     let dmg = hit.dmg;
-                    if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+                    if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
                     this.showDamageText(m.x, m.y, dmg, hit.crit);
                     this.damageMonster(m, dmg);
                 }
@@ -329,7 +329,7 @@ export class TowerSystem {
                 const hitX = target.active ? target.x : bomb.x;
                 const hitY = target.active ? target.y : bomb.y;
                 const hit = this.calculateDamage(tower);
-                this.createExplosion(hitX, hitY, tower.stats.aoeRadius || 150, hit.dmg, hit.crit);
+                this.createExplosion(hitX, hitY, tower.stats.aoeRadius || COMBAT_CONFIG.BOMB_RADIUS, hit.dmg, hit.crit);
             }
         });
     }
@@ -352,7 +352,7 @@ export class TowerSystem {
                 if (!m.active) return;
                 if (Phaser.Math.Distance.Between(x, y, m.x, m.y) <= radius) {
                     let finalDmg = damage;
-                    if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) finalDmg *= 1.5;
+                    if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) finalDmg *= COMBAT_CONFIG.VULNERABLE_MULT;
                     this.showDamageText(m.x, m.y, finalDmg, isCrit);
                     this.damageMonster(m, finalDmg);
                 }

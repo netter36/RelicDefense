@@ -1,4 +1,4 @@
-import { ITEMS } from '../items.js';
+import { ITEMS } from '../data/items.js';
 import { GRID_WIDTH, GRID_HEIGHT, SLOT_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT, THEME, SYNERGIES } from '../constants.js';
 import { RenderUtils } from '../utils/RenderUtils.js';
 

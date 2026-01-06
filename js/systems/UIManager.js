@@ -1,9 +1,10 @@
-import { ITEMS } from '../items.js';
-import { ELEMENT_COLORS, SYNERGIES } from '../constants.js';
+import { ITEMS } from '../data/items.js';
+import { ELEMENT_COLORS, SYNERGIES, COMBAT_CONFIG } from '../constants.js';
 
 export class UIManager {
     constructor(scene) {
         this.scene = scene;
+
         this.shopTags = document.getElementById('shop-tags');
         this.shopList = document.getElementById('item-shop');
         this.tooltip = document.getElementById('tooltip');
@@ -239,8 +240,8 @@ export class UIManager {
 
         const stats = item.stats || {};
         let atk = item.currentAtk || stats.atk || 0;
-        let range = item.range || stats.range || 250;
-        let fr = item.currentFireRate || stats.fireRate || 1000;
+        let range = item.range || stats.range || COMBAT_CONFIG.DEFAULT_RANGE;
+        let fr = item.currentFireRate || stats.fireRate || COMBAT_CONFIG.DEFAULT_FIRE_RATE;
 
         // DPS Calculation
         const dps = Math.round(atk * (1000 / (fr || 1000)));
@@ -254,8 +255,8 @@ export class UIManager {
         };
 
         let html = `<div style="font-size:0.95em; line-height:1.5;">`;
-        html += `<div>⚡ 초당 공격력: <span style="color:#fbbf24; font-weight:bold;">${dps}</span></div>`;
-        html += `<div>🎯 사거리: <span style="color:#38bdf8; font-weight:bold;">${range}</span></div>`;
+        html += `<div>⚡ 초당 공격력: <span style="color:#fbbf24; font-weight:bold;">${Math.round(dps)}</span></div>`;
+        html += `<div>🎯 사거리: <span style="color:#38bdf8; font-weight:bold;">${Math.round(range)}</span></div>`;
 
         // Special Stats
         if (stats.attackType === 'rapid') {
@@ -269,7 +270,7 @@ export class UIManager {
             html += `<div>✨ 동시: <span style="color:#f472b6; font-weight:bold;">${stats.projectileCount}발</span></div>`;
         }
         if (stats.aoeRadius) {
-            html += `<div>💥 범위: <span style="color:#f87171; font-weight:bold;">${stats.aoeRadius}px</span></div>`;
+            html += `<div>💥 범위: <span style="color:#f87171; font-weight:bold;">${Math.round(stats.aoeRadius)}px</span></div>`;
         }
 
         // Active Synergy
