@@ -27,16 +27,17 @@ export class RenderUtils {
                     const ox = dx * SLOT_SIZE - (data.width * SLOT_SIZE) / 2;
                     const oy = dy * SLOT_SIZE - (data.height * SLOT_SIZE) / 2;
 
-                    // Seamless Fill Base
-                    baseG.fillStyle(color, alpha);
-                    baseG.fillRect(ox, oy, SLOT_SIZE, SLOT_SIZE);
+                    // Seamless Fill Base with Margins
+                    const GAP = 4;
+                    let mx = 0, my = 0, mw = SLOT_SIZE, mh = SLOT_SIZE;
 
-                    // Contour Outline Logic
-                    baseG.lineStyle(2, 0xffffff, 0.8);
-                    if (!check(dx, dy - 1)) { baseG.beginPath(); baseG.moveTo(ox, oy); baseG.lineTo(ox + SLOT_SIZE, oy); baseG.stroke(); }
-                    if (!check(dx, dy + 1)) { baseG.beginPath(); baseG.moveTo(ox, oy + SLOT_SIZE); baseG.lineTo(ox + SLOT_SIZE, oy + SLOT_SIZE); baseG.stroke(); }
-                    if (!check(dx - 1, dy)) { baseG.beginPath(); baseG.moveTo(ox, oy); baseG.lineTo(ox, oy + SLOT_SIZE); baseG.stroke(); }
-                    if (!check(dx + 1, dy)) { baseG.beginPath(); baseG.moveTo(ox + SLOT_SIZE, oy); baseG.lineTo(ox + SLOT_SIZE, oy + SLOT_SIZE); baseG.stroke(); }
+                    if (!check(dx - 1, dy)) { mx += GAP; mw -= GAP; } // No Left Neighbor
+                    if (!check(dx + 1, dy)) { mw -= GAP; }            // No Right Neighbor
+                    if (!check(dx, dy - 1)) { my += GAP; mh -= GAP; } // No Top Neighbor
+                    if (!check(dx, dy + 1)) { mh -= GAP; }            // No Bottom Neighbor
+
+                    baseG.fillStyle(color, alpha);
+                    baseG.fillRect(ox + mx, oy + my, mw, mh);
                 }
             });
         });
@@ -57,7 +58,12 @@ export class RenderUtils {
             };
             const glowColor = synColors[data.element] || 0xffd700;
 
-            glow.lineStyle(4, glowColor, 1.0);
+            // Use 4px width, inset by 2px to keep it purely inside
+            const lineWidth = 4;
+            const offset = 2; // Half of line width to center it inside
+            const GAP = 4;    // Match the gap used in base rendering
+
+            glow.lineStyle(lineWidth, glowColor, 1.0);
 
             data.shape.forEach((row, dy) => {
                 row.forEach((v, dx) => {
@@ -65,10 +71,30 @@ export class RenderUtils {
                         const ox = dx * SLOT_SIZE - (data.width * SLOT_SIZE) / 2;
                         const oy = dy * SLOT_SIZE - (data.height * SLOT_SIZE) / 2;
 
-                        if (!check(dx, dy - 1)) { glow.beginPath(); glow.moveTo(ox, oy); glow.lineTo(ox + SLOT_SIZE, oy); glow.stroke(); }
-                        if (!check(dx, dy + 1)) { glow.beginPath(); glow.moveTo(ox, oy + SLOT_SIZE); glow.lineTo(ox + SLOT_SIZE, oy + SLOT_SIZE); glow.stroke(); }
-                        if (!check(dx - 1, dy)) { glow.beginPath(); glow.moveTo(ox, oy); glow.lineTo(ox, oy + SLOT_SIZE); glow.stroke(); }
-                        if (!check(dx + 1, dy)) { glow.beginPath(); glow.moveTo(ox + SLOT_SIZE, oy); glow.lineTo(ox + SLOT_SIZE, oy + SLOT_SIZE); glow.stroke(); }
+                        const hasLeft = check(dx - 1, dy);
+                        const hasRight = check(dx + 1, dy);
+                        const hasTop = check(dx, dy - 1);
+                        const hasBottom = check(dx, dy + 1);
+
+                        // Calculate visual boundaries based on neighbors/gap
+                        const vx1 = ox + (hasLeft ? 0 : GAP);
+                        const vx2 = ox + SLOT_SIZE - (hasRight ? 0 : GAP);
+                        const vy1 = oy + (hasTop ? 0 : GAP);
+                        const vy2 = oy + SLOT_SIZE - (hasBottom ? 0 : GAP);
+
+                        // Draw inset lines based on boundaries using lineBetween
+                        if (!hasTop) {
+                            glow.lineBetween(vx1, vy1 + offset, vx2, vy1 + offset);
+                        }
+                        if (!hasBottom) {
+                            glow.lineBetween(vx1, vy2 - offset, vx2, vy2 - offset);
+                        }
+                        if (!hasLeft) {
+                            glow.lineBetween(vx1 + offset, vy1, vx1 + offset, vy2);
+                        }
+                        if (!hasRight) {
+                            glow.lineBetween(vx2 - offset, vy1, vx2 - offset, vy2);
+                        }
                     }
                 });
             });
@@ -87,16 +113,33 @@ export class RenderUtils {
             const sz = SLOT_SIZE * 0.4 * scale;
             if (type === 'fire') g.fillTriangle(x, y - sz, x - sz, y + sz * 0.8, x + sz, y + sz * 0.8);
             if (type === 'ice') {
-                g.beginPath(); g.moveTo(x, y - sz); g.lineTo(x + sz, y); g.lineTo(x, y + sz); g.lineTo(x - sz, y); g.closePath(); g.fill();
+                g.fillPoints([
+                    { x: x, y: y - sz },
+                    { x: x + sz, y: y },
+                    { x: x, y: y + sz },
+                    { x: x - sz, y: y }
+                ], true);
             }
             if (type === 'thunder') {
-                g.beginPath(); g.moveTo(x + sz * 0.4, y - sz); g.lineTo(x - sz * 0.2, y - sz * 0.1); g.lineTo(x + sz * 0.6, y - sz * 0.1);
-                g.lineTo(x - sz * 0.4, y + sz); g.lineTo(x + sz * 0.2, y + sz * 0.1); g.lineTo(x - sz * 0.6, y + sz * 0.1); g.closePath(); g.fill();
+                g.fillPoints([
+                    { x: x + sz * 0.4, y: y - sz },
+                    { x: x - sz * 0.2, y: y - sz * 0.1 },
+                    { x: x + sz * 0.6, y: y - sz * 0.1 },
+                    { x: x - sz * 0.4, y: y + sz },
+                    { x: x + sz * 0.2, y: y + sz * 0.1 },
+                    { x: x - sz * 0.6, y: y + sz * 0.1 }
+                ], true);
             }
             if (type === 'leaf') g.fillCircle(x, y, sz * 0.8);
             if (type === 'gem') {
                 const r = sz * 0.7; g.fillRect(x - r, y - r, r * 2, r * 2);
-                const r2 = sz * 0.9; g.beginPath(); g.moveTo(x, y - r2); g.lineTo(x + r2, y); g.lineTo(x, y + r2); g.lineTo(x - r2, y); g.closePath(); g.fill();
+                const r2 = sz * 0.9;
+                g.fillPoints([
+                    { x: x, y: y - r2 },
+                    { x: x + r2, y: y },
+                    { x: x, y: y + r2 },
+                    { x: x - r2, y: y }
+                ], true);
             }
         };
 
@@ -111,9 +154,15 @@ export class RenderUtils {
 
         switch (data.id) {
             case 'thunder_rapier':
-                g.beginPath();
-                g.moveTo(0, -h / 2 + 10); g.lineTo(8, -h / 4); g.lineTo(4, h / 2 - 20); g.lineTo(0, h / 2 - 5); g.lineTo(-4, h / 2 - 20); g.lineTo(-8, -h / 4);
-                g.closePath(); g.fill();
+                // Thunder Rapier: Jagged Blade
+                g.fillPoints([
+                    { x: 0, y: -h / 2 + 10 },
+                    { x: 8, y: -h / 4 },
+                    { x: 4, y: h / 2 - 20 },
+                    { x: 0, y: h / 2 - 5 },
+                    { x: -4, y: h / 2 - 20 },
+                    { x: -8, y: -h / 4 }
+                ], true);
                 g.strokeCircle(0, h / 2 - 25, 12);
                 g.lineBetween(-12, h / 2 - 25, 12, h / 2 - 25);
                 break;
@@ -147,8 +196,11 @@ export class RenderUtils {
                 break;
             case 'leaf_blast':
                 g.lineStyle(3, 0x88ff88, 0.8);
-                g.beginPath();
-                g.moveTo(-w / 2 + 10, h / 4); g.lineTo(0, h / 2 - 5); g.lineTo(w / 2 - 10, h / 4); g.stroke();
+                g.strokePoints([
+                    { x: -w / 2 + 10, y: h / 4 },
+                    { x: 0, y: h / 2 - 5 },
+                    { x: w / 2 - 10, y: h / 4 }
+                ], false);
                 g.fillStyle(0xffffff, 0.9);
                 g.fillCircle(-w / 4, -h / 4, 15);
                 g.lineStyle(2, 0xffffff, 0.9);
@@ -160,14 +212,22 @@ export class RenderUtils {
                 g.strokeRect(-15, -30, 30, 10);
                 break;
             case 'leaf_bow':
-                g.beginPath(); g.moveTo(-5, -h / 2 + 15); g.lineTo(20, -h / 4); g.lineTo(10, 0); g.lineTo(20, h / 4); g.lineTo(-5, h / 2 - 15); g.stroke();
+                g.strokePoints([
+                    { x: -5, y: -h / 2 + 15 },
+                    { x: 20, y: -h / 4 },
+                    { x: 10, y: 0 },
+                    { x: 20, y: h / 4 },
+                    { x: -5, y: h / 2 - 15 }
+                ], false);
                 g.lineBetween(-5, -h / 2 + 15, -5, h / 2 - 15);
                 break;
             case 'judgement_prism':
                 g.fillRect(-w / 2 + 20, h / 4 - 5, w - 40, 10);
-                g.beginPath();
-                g.moveTo(-w / 4, -h / 2 + 20); g.lineTo(-w / 4 + 15, -h / 4 + 20); g.lineTo(-w / 4 - 15, -h / 4 + 20);
-                g.closePath(); g.stroke();
+                g.strokeTriangle(
+                    -w / 4, -h / 2 + 20,
+                    -w / 4 + 15, -h / 4 + 20,
+                    -w / 4 - 15, -h / 4 + 20
+                );
                 g.lineBetween(-w / 4, -h / 4 + 20, -w / 4, h / 4 - 5);
                 break;
             case 'chaos_orb':
@@ -306,11 +366,12 @@ export class RenderUtils {
             proj.lineStyle(3, 0xe040fb, 1);
             proj.strokeCircle(0, 0, 10);
             proj.fillStyle(0xffffff, 1);
-            proj.beginPath();
-            proj.moveTo(0, -12); proj.lineTo(3, -3); proj.lineTo(12, 0); proj.lineTo(3, 3);
-            proj.moveTo(0, 12); proj.lineTo(-3, 3); proj.lineTo(-12, 0); proj.lineTo(-3, -3);
-            proj.closePath();
-            proj.fill();
+            proj.fillPoints([
+                { x: 0, y: -12 }, { x: 3, y: -3 },
+                { x: 12, y: 0 }, { x: 3, y: 3 },
+                { x: 0, y: 12 }, { x: -3, y: 3 },
+                { x: -12, y: 0 }, { x: -3, y: -3 }
+            ], true);
             scene.tweens.add({ targets: proj, angle: -360, duration: 600, repeat: -1 });
         } else if (element === 'leaf') {
             proj.fillStyle(0x4caf50, 1);

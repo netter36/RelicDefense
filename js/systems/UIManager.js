@@ -30,9 +30,18 @@ export class UIManager {
             comboList.innerHTML = state.combos.map(name => {
                 const syn = SYNERGIES.find(s => s.name === name);
                 const desc = syn ? syn.desc : '';
+                const colorMap = {
+                    'fire': '#ef4444',
+                    'ice': '#3b82f6',
+                    'thunder': '#facc15',
+                    'leaf': '#10b981',
+                    'gem': '#d8b4fe'
+                };
+                const color = syn ? (colorMap[syn.element] || '#8b5cf6') : '#8b5cf6';
+
                 return `
-                <div class="combo-item">
-                    <div class="combo-name">✨ ${name}</div>
+                <div class="combo-item" style="border-left-color: ${color}; background: linear-gradient(90deg, ${color}22, transparent);">
+                    <div class="combo-name" style="color: ${color};">✨ ${name}</div>
                     <div class="combo-desc">${desc}</div>
                 </div>`;
             }).join('');
@@ -234,13 +243,10 @@ export class UIManager {
         const dynamicContent = this.getDynamicDesc(item);
 
         this.tooltip.innerHTML = `
-            <div class="tooltip-header">
+            <div class="tooltip-header" style="--rarity-color: ${rarityColor};">
                 <div class="tooltip-name">${item.name}</div>
-                <div class="tooltip-rarity" style="color:${rarityColor}">${rarityText}</div>
             </div>
-            <div class="tooltip-content">
-                <div class="tooltip-desc">${dynamicContent}</div>
-            </div>
+            <div class="tooltip-desc">${dynamicContent}</div>
         `;
 
         this.updateTooltipPos(e);

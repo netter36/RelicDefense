@@ -1,9 +1,43 @@
-import { ATTACK_TYPES, COMBAT_CONFIG, UI_CONFIG } from '../constants.js';
+import { ATTACK_TYPES, COMBAT_CONFIG, UI_CONFIG, SLOT_SIZE } from '../constants.js';
 import { RenderUtils } from '../utils/RenderUtils.js';
 
 export class TowerSystem {
     constructor(scene) {
         this.scene = scene;
+    }
+
+    getVisualCenter(tower) {
+        if (!tower.shape) return { x: tower.x, y: tower.y };
+
+        // tower.x/y is the center of the bounding box
+        const topLeftX = tower.x - (tower.width * SLOT_SIZE) / 2;
+        const topLeftY = tower.y - (tower.height * SLOT_SIZE) / 2;
+
+        let totalX = 0;
+        let totalY = 0;
+        let count = 0;
+
+        // Calculate center of mass based on absolute pixel positions of occupied cells
+        tower.shape.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                if (cell === 1) {
+                    // Center of this specific cell
+                    const cellCenterX = topLeftX + colIndex * SLOT_SIZE + SLOT_SIZE / 2;
+                    const cellCenterY = topLeftY + rowIndex * SLOT_SIZE + SLOT_SIZE / 2;
+
+                    totalX += cellCenterX;
+                    totalY += cellCenterY;
+                    count++;
+                }
+            });
+        });
+
+        if (count === 0) return { x: tower.x, y: tower.y };
+
+        return {
+            x: totalX / count,
+            y: totalY / count
+        };
     }
 
     calculateDamage(tower) {
@@ -57,12 +91,13 @@ export class TowerSystem {
             }
 
             const at = tower.stats.attackType;
+            const origin = this.getVisualCenter(tower);
 
             if (at === ATTACK_TYPES.RAPID) {
                 // Burst Fire Logic
-                const target = this.getNearestMonster(tower.x, tower.y, tower.range);
+                const target = this.getNearestMonster(origin.x, origin.y, tower.range);
                 if (target) {
-                    this.fireProjectile(tower, target);
+                    this.fireProjectile(tower, target, origin);
                     tower.lastFire = time;
 
                     tower.burstCounter = (tower.burstCounter || 0) + 1;
@@ -73,26 +108,26 @@ export class TowerSystem {
             } else if (at === ATTACK_TYPES.MULTI) {
                 // Multi-Target Logic
                 const count = tower.stats.projectileCount || 3;
-                const targets = this.getMultipleMonsters(tower.x, tower.y, tower.range, count);
+                const targets = this.getMultipleMonsters(origin.x, origin.y, tower.range, count);
                 if (targets.length > 0) {
-                    targets.forEach(t => this.fireProjectile(tower, t));
+                    targets.forEach(t => this.fireProjectile(tower, t, origin));
                     tower.lastFire = time;
                 }
             } else if (at === ATTACK_TYPES.CHAIN) {
-                const target = this.getNearestMonster(tower.x, tower.y, tower.range);
+                const target = this.getNearestMonster(origin.x, origin.y, tower.range);
                 if (target) {
                     const chainCount = tower.stats.chainCount || 3;
-                    this.fireChain(tower, target, chainCount, []);
+                    this.fireChain(tower, target, chainCount, [], origin);
                     tower.lastFire = time;
                 }
             } else {
                 // Single Target Logic
-                const target = this.getNearestMonster(tower.x, tower.y, tower.range);
+                const target = this.getNearestMonster(origin.x, origin.y, tower.range);
                 if (target) {
-                    if (at === ATTACK_TYPES.LASER) this.fireLaser(tower, target);
-                    else if (at === ATTACK_TYPES.NOVA) this.fireNova(tower);
-                    else if (at === ATTACK_TYPES.BOMB) this.fireBomb(tower, target);
-                    else this.fireProjectile(tower, target);
+                    if (at === ATTACK_TYPES.LASER) this.fireLaser(tower, target, origin);
+                    else if (at === ATTACK_TYPES.NOVA) this.fireNova(tower, origin);
+                    else if (at === ATTACK_TYPES.BOMB) this.fireBomb(tower, target, origin);
+                    else this.fireProjectile(tower, target, origin);
                     tower.lastFire = time;
                 }
             }
@@ -113,23 +148,15 @@ export class TowerSystem {
         return inRange.slice(0, count);
     }
 
-    fireChain(tower, target, jumpsRemaining, hitList) {
+    fireChain(tower, target, jumpsRemaining, hitList, origin) {
         if (!target || !target.active || jumpsRemaining <= 0) return;
         hitList.push(target);
 
-        // Visual
-        // For first jump, start from tower. For others, start from previous target (which is not passed easily unless we refactor).
-        // Let's simplified: This function handles ONE hit.
+        // Use provided origin for the first bolt, otherwise previous logic handling
+        const startX = origin ? origin.x : tower.x;
+        const startY = origin ? origin.y : tower.y;
 
-        // Wait, standard chain lightning usually is: Tower -> A -> B -> C
-        // I need to know source position.
-
-        // Refactored recursive approach:
-        // Actually, let's just launch a "Chain Projectile" that does the logic on impact?
-        // Or simpler: Immediate effect with delayed visuals.
-
-        // Let's do recursive immediate function
-        this._processChainLink(tower.x, tower.y, target, jumpsRemaining, hitList, tower);
+        this._processChainLink(startX, startY, target, jumpsRemaining, hitList, tower);
     }
 
     _processChainLink(startX, startY, target, jumps, hitList, tower) {
@@ -142,7 +169,6 @@ export class TowerSystem {
         bolt.lineBetween(startX, startY, target.x, target.y);
         this.scene.tweens.add({ targets: bolt, alpha: 0, duration: 200, onComplete: () => bolt.destroy() });
 
-        // Damage & Effect
         // Damage & Effect
         const hit = this.calculateDamage(tower);
         let dmg = hit.dmg;
@@ -216,10 +242,12 @@ export class TowerSystem {
         RenderUtils.createHitEffect(this.scene, x, y, element);
     }
 
-    fireProjectile(tower, target) {
+    fireProjectile(tower, target, origin) {
         if (!target || !target.active) return;
 
-        const proj = RenderUtils.createProjectile(this.scene, tower.x, tower.y, tower.element);
+        const startX = origin ? origin.x : tower.x;
+        const startY = origin ? origin.y : tower.y;
+        const proj = RenderUtils.createProjectile(this.scene, startX, startY, tower.element);
 
         const spread = 20;
         const tx = target.x + (Math.random() * spread - spread / 2);
@@ -257,14 +285,17 @@ export class TowerSystem {
         });
     }
 
-    fireLaser(tower, target) {
+    fireLaser(tower, target, origin) {
         const colors = { fire: 0xff5555, ice: 0x33ddff, thunder: 0xffeb3b, leaf: 0x4caf50, gem: 0xe040fb };
         const color = colors[tower.element] || 0xef4444;
+
+        const startX = origin ? origin.x : tower.x;
+        const startY = origin ? origin.y : tower.y;
 
         const laser = this.scene.add.graphics();
         laser.setDepth(25);
         laser.lineStyle(tower.element === 'gem' ? 6 : 4, color, tower.element === 'gem' ? 0.6 : 1);
-        laser.lineBetween(tower.x, tower.y, target.x, target.y);
+        laser.lineBetween(startX, startY, target.x, target.y);
 
         this.scene.time.delayedCall(80, () => laser.destroy());
 
@@ -276,7 +307,7 @@ export class TowerSystem {
 
         target.hp -= dmg;
         this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
-        this.createHitEffect(target.x, target.y, tower.element); // Might be too sparky for laser? Maybe reduce chance.
+        this.createHitEffect(target.x, target.y, tower.element);
 
         this.scene.updateHPBar(target);
         if (target.hp <= 0) {
@@ -285,9 +316,12 @@ export class TowerSystem {
         }
     }
 
-    fireNova(tower) {
+    fireNova(tower, origin) {
         // Visual Effect
-        const ring = this.scene.add.circle(tower.x, tower.y, 10, 0x3b82f6, 0.3);
+        const startX = origin ? origin.x : tower.x;
+        const startY = origin ? origin.y : tower.y;
+
+        const ring = this.scene.add.circle(startX, startY, 10, 0x3b82f6, 0.3);
         ring.setDepth(25);
         this.scene.tweens.add({
             targets: ring,
@@ -301,7 +335,7 @@ export class TowerSystem {
         if (this.scene.monsters) {
             this.scene.monsters.getChildren().forEach(m => {
                 if (!m.active) return;
-                const dist = Phaser.Math.Distance.Between(tower.x, tower.y, m.x, m.y);
+                const dist = Phaser.Math.Distance.Between(startX, startY, m.x, m.y);
                 if (dist <= (tower.range || 250)) {
                     const hit = this.calculateDamage(tower);
                     let dmg = hit.dmg;
@@ -313,8 +347,11 @@ export class TowerSystem {
         }
     }
 
-    fireBomb(tower, target) {
-        const bomb = this.scene.add.circle(tower.x, tower.y, 8, 0xff0000);
+    fireBomb(tower, target, origin) {
+        const startX = origin ? origin.x : tower.x;
+        const startY = origin ? origin.y : tower.y;
+
+        const bomb = this.scene.add.circle(startX, startY, 8, 0xff0000);
         this.scene.physics.add.existing(bomb);
 
         this.scene.tweens.add({
@@ -324,8 +361,7 @@ export class TowerSystem {
             duration: 400,
             onComplete: () => {
                 bomb.destroy();
-                // Explode at target location (last known or projected?)
-                // Simple: Explode at target's current position if alive, else bomb's position
+                // Explode at target location
                 const hitX = target.active ? target.x : bomb.x;
                 const hitY = target.active ? target.y : bomb.y;
                 const hit = this.calculateDamage(tower);
