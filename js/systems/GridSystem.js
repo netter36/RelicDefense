@@ -403,25 +403,7 @@ export class GridSystem {
         }
     }
 
-    rotateItem(item) {
-        const rows = item.shape.length, cols = item.shape[0].length;
-        const newShape = Array(cols).fill().map(() => Array(rows).fill(0));
-        for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) newShape[x][rows - 1 - y] = item.shape[y][x];
 
-        const oldShape = item.shape, oldW = item.width, oldH = item.height;
-        this.setGrid(item, null);
-        item.shape = newShape; item.width = oldH; item.height = oldW;
-
-        if (!this.canPlace(item, item.gridPos.x, item.gridPos.y)) {
-            // Try to find a valid spot for rotated item around current center?
-            // For now, simple revert
-            item.shape = oldShape; item.width = oldW; item.height = oldH;
-        } else {
-            this.renderProceduralShape(item.el, item);
-        }
-        this.setGrid(item, item);
-        this.calculateSynergies();
-    }
 
     snap(item) {
         item.el.x = this.gridStartPos.x + item.gridPos.x * SLOT_SIZE + (item.width * SLOT_SIZE) / 2;
@@ -527,6 +509,8 @@ export class GridSystem {
             i.currentAtk = i.stats?.atk || 0;
             i.currentFireRate = i.stats?.fireRate || 1000;
             i.range = i.stats?.range || 250;
+            i.critChance = 0;
+            i.debuffEfficiency = 1;
         });
 
         // Apply Tablet Buffs
@@ -571,6 +555,8 @@ export class GridSystem {
                     if (syn.id === 'fire_power') i.currentAtk *= 1.2;
                     if (syn.id === 'thunder_rapid') i.currentFireRate *= 0.7;
                     if (syn.id === 'leaf_regen') i.range *= 1.15;
+                    if (syn.id === 'ice_freeze') i.debuffEfficiency = 1.25;
+                    if (syn.id === 'gem_legend') i.critChance = 0.1;
                 });
             }
         });

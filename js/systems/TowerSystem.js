@@ -5,6 +5,13 @@ export class TowerSystem {
         this.scene = scene;
     }
 
+    calculateDamage(tower) {
+        let dmg = (tower.currentAtk || tower.stats.atk);
+        const crit = (tower.critChance && Math.random() < tower.critChance);
+        if (crit) dmg *= 2;
+        return { dmg, crit };
+    }
+
     update(time, placedItems) {
         placedItems.forEach(tower => {
             if (tower.type !== 'artifact' || !tower.el) return;
@@ -110,11 +117,19 @@ export class TowerSystem {
         this.scene.tweens.add({ targets: bolt, alpha: 0, duration: 200, onComplete: () => bolt.destroy() });
 
         // Damage & Effect
-        let dmg = (tower.currentAtk || tower.stats.atk);
+        // Damage & Effect
+        const hit = this.calculateDamage(tower);
+        let dmg = hit.dmg;
         if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
 
+        if (hit.crit) {
+            const txt = this.scene.add.text(target.x, target.y - 30, 'CRIT!', { fontSize: '16px', color: '#dc2626', fontStyle: 'bold', stroke: '#fff', strokeThickness: 2 }).setOrigin(0.5);
+            txt.setDepth(100);
+            this.scene.tweens.add({ targets: txt, y: target.y - 60, alpha: 0, duration: 600, onComplete: () => txt.destroy() });
+        }
+
         target.hp -= dmg;
-        this.applyDebuff(target, tower.stats.debuff);
+        this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
         this.createHitEffect(target.x, target.y, tower.element);
 
         this.scene.updateHPBar(target);
@@ -150,15 +165,24 @@ export class TowerSystem {
         return nearest;
     }
 
-    applyDebuff(target, debuff) {
+    applyDebuff(target, debuff, efficiency = 1) {
         if (!debuff || !target.active || !target.debuffs) return;
         if (debuff.chance && Math.random() > debuff.chance) return;
 
-        const existing = target.debuffs.find(d => d.type === debuff.type);
+        let d = { ...debuff };
+        // Apply Efficiency (Ice Synergy)
+        if (d.type === 'slow' && efficiency > 1) {
+            d.val = 1 - (1 - d.val) * efficiency;
+            if (d.val < 0.1) d.val = 0.1;
+        }
+
+        const existing = target.debuffs.find(e => e.type === d.type);
         if (existing) {
-            existing.duration = debuff.duration;
+            existing.duration = d.duration;
+            if (d.type === 'slow' && d.val < existing.val) existing.val = d.val;
+            if (d.type === 'vulnerable' && d.val > existing.val) existing.val = d.val;
         } else {
-            target.debuffs.push({ ...debuff, tick: 0 });
+            target.debuffs.push({ ...d, tick: 0 });
         }
     }
 
@@ -278,12 +302,20 @@ export class TowerSystem {
                 // Since it's homing-ish (short duration), we assume hit if target active.
                 // But visual spread shouldn't affect damage logic for now unless requested.
                 if (target.active) {
-                    let dmg = (tower.currentAtk || tower.stats.atk);
+                    const hit = this.calculateDamage(tower);
+                    let dmg = hit.dmg;
+
                     if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
+
+                    if (hit.crit) {
+                        const txt = this.scene.add.text(target.x, target.y - 30, 'CRIT!', { fontSize: '18px', color: '#dc2626', fontStyle: 'bold', stroke: '#fff', strokeThickness: 2 }).setOrigin(0.5);
+                        txt.setDepth(100);
+                        this.scene.tweens.add({ targets: txt, y: target.y - 60, alpha: 0, duration: 800, onComplete: () => txt.destroy() });
+                    }
 
                     target.hp -= dmg;
                     this.scene.updateHPBar(target);
-                    this.applyDebuff(target, tower.stats.debuff);
+                    this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
                     this.createHitEffect(target.x, target.y, tower.element);
 
                     if (target.hp <= 0) {
@@ -306,11 +338,12 @@ export class TowerSystem {
 
         this.scene.time.delayedCall(80, () => laser.destroy());
 
-        let dmg = (tower.currentAtk || tower.stats.atk) * 0.1; // Laser ticks often
+        const hit = this.calculateDamage(tower);
+        let dmg = hit.dmg * 0.1; // Laser ticks often
         if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= 1.5;
 
         target.hp -= dmg;
-        this.applyDebuff(target, tower.stats.debuff);
+        this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
         this.createHitEffect(target.x, target.y, tower.element); // Might be too sparky for laser? Maybe reduce chance.
 
         this.scene.updateHPBar(target);
