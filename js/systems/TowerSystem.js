@@ -43,7 +43,11 @@ export class TowerSystem {
     calculateDamage(tower) {
         let dmg = (tower.currentAtk || tower.stats.atk);
         const crit = (tower.critChance && Math.random() < tower.critChance);
-        if (crit) dmg *= COMBAT_CONFIG.CRIT_DAMAGE_MULT;
+        if (crit) {
+            // Use custom multiplier if present (Iron Synergy), otherwise default
+            const mult = tower.critDmgMult || COMBAT_CONFIG.CRIT_DAMAGE_MULT;
+            dmg *= mult;
+        }
         return { dmg, crit };
     }
 
@@ -269,20 +273,65 @@ export class TowerSystem {
 
                     if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
 
-                    this.showDamageText(target.x, target.y, dmg, hit.crit);
+                    // Shadow Synergy: Execute
+                    if (tower.executeThreshold) {
+                        const hpPercent = target.hp / target.maxHp;
+                        if (hpPercent <= tower.executeThreshold) {
+                            dmg *= 2;
+                        }
+                    }
 
-                    target.hp -= dmg;
-                    this.scene.updateHPBar(target);
-                    this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
-                    this.createHitEffect(target.x, target.y, tower.element);
+                    // Apply Damage to Main Target
+                    this.applyDamage(target, dmg, hit.crit, tower);
 
-                    if (target.hp <= 0) {
-                        if (this.scene.enemySystem) this.scene.enemySystem.killMonster(target);
-                        else { target.destroy(); this.scene.updateMonsterCount(); }
+                    // Mystic Synergy: Pierce
+                    // If the tower has pierceCount, damage enemies behind the target
+                    if (tower.pierceCount && tower.pierceCount > 0) {
+                        const pierceRange = 150; // Distance behind target to check
+                        const angle = Phaser.Math.Angle.Between(startX, startY, target.x, target.y);
+                        const endX = target.x + Math.cos(angle) * pierceRange;
+                        const endY = target.y + Math.sin(angle) * pierceRange;
+
+                        // Simple line check or just "scan cone" behind
+                        // For simplicity: Find enemies near the "pierce line"
+                        if (this.scene.enemySystem) {
+                            const others = this.scene.enemySystem.monsters.getChildren().filter(m =>
+                                m !== target && m.active &&
+                                Phaser.Math.Distance.Between(m.x, m.y, target.x, target.y) <= pierceRange
+                            );
+
+                            let pierced = 0;
+                            others.forEach(m => {
+                                if (pierced >= tower.pierceCount) return;
+                                // Check if 'm' is roughly in the same direction
+                                const angleToM = Phaser.Math.Angle.Between(target.x, target.y, m.x, m.y);
+                                const diff = Math.abs(Phaser.Math.Angle.Wrap(angle - angleToM));
+                                if (diff < 0.5) { // Roughly 30 degrees cone behind
+                                    this.applyDamage(m, dmg * 0.7, hit.crit, tower); // 70% damage for pierce
+                                    this.createHitEffect(m.x, m.y, tower.element);
+                                    pierced++;
+                                }
+                            });
+                        }
                     }
                 }
             }
         });
+    }
+
+    // Helper to centralize damage application
+    applyDamage(target, dmg, isCrit, tower) {
+        if (!target.active) return;
+        this.showDamageText(target.x, target.y, dmg, isCrit);
+        target.hp -= dmg;
+        this.scene.updateHPBar(target);
+        this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
+        this.createHitEffect(target.x, target.y, tower.element);
+
+        if (target.hp <= 0) {
+            if (this.scene.enemySystem) this.scene.enemySystem.killMonster(target);
+            else { target.destroy(); this.scene.updateMonsterCount(); }
+        }
     }
 
     fireLaser(tower, target, origin) {

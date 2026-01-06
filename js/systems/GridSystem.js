@@ -360,6 +360,9 @@ export class GridSystem {
                     if (syn.id === 'leaf_regen') i.range *= 1.15;
                     if (syn.id === 'ice_freeze') i.debuffEfficiency = 1.25;
                     if (syn.id === 'gem_legend') i.critChance = 0.1;
+                    if (syn.id === 'shadow_curse') i.executeThreshold = 0.3;
+                    if (syn.id === 'plasma_boom') i.aoeMult = 1.5;
+                    if (syn.id === 'mystic_pierce') i.pierceCount = (i.pierceCount || 0) + 1;
                 });
             }
         });

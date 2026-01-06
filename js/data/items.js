@@ -98,5 +98,67 @@ export const ITEMS = [
         stats: { atk: 12, range: 220, fireRate: 1100, attackType: 'normal', debuff: { type: 'slow', val: 0.6, duration: 2500 } },
         desc: '날카로운 얼음 조각으로 적의 움직임을 크게 둔화시킵니다.',
         flavor: '"발걸음이 무거워질 것이다."'
+    },
+
+
+
+    // --- 그림자 (Shadow) ---
+    {
+        id: 'shadow_dagger', name: '암살자의 단검', shape: [[1], [1]], width: 1, height: 2, element: 'shadow', type: 'artifact',
+        stats: { atk: 18, range: 220, fireRate: 500, attackType: 'rapid', burstCount: 3, reloadTime: 1000 },
+        desc: '보이지 않는 속도로 적의 급소를 연속 가격합니다.',
+        flavor: '"그림자 속에 숨어라."'
+    },
+    {
+        id: 'shadow_orb', name: '공허의 구체', shape: [[1, 1], [0, 1]], width: 2, height: 2, element: 'shadow', type: 'artifact',
+        stats: { atk: 30, range: 400, fireRate: 1200, attackType: 'normal' },
+        desc: '적을 추적하는 암흑 에너지를 발사합니다.',
+        flavor: '"벗어날 수 없는 운명."'
+    },
+    {
+        id: 'shadow_scythe', name: '사신의 낫', shape: [[1, 1], [1, 0]], width: 2, height: 2, element: 'shadow', type: 'artifact',
+        stats: { atk: 45, range: 300, fireRate: 1800, attackType: 'chain', chainCount: 4 },
+        desc: '영혼을 수확하는 낫을 휘둘러 다수의 적을 베어냅니다.',
+        flavor: '"수확의 계절이 왔다."'
+    },
+
+    // --- 플라즈마 (Plasma) ---
+    {
+        id: 'plasma_launcher', name: '플라즈마 발사기', shape: [[1, 1], [0, 1]], width: 2, height: 2, element: 'plasma', type: 'artifact',
+        stats: { atk: 50, range: 400, fireRate: 2000, attackType: 'bomb', aoeRadius: 150 },
+        desc: '불안정한 플라즈마 구체를 날려 광범위한 폭발을 일으킵니다.',
+        flavor: '"조심해, 뜨거우니까."'
+    },
+    {
+        id: 'plasma_flux', name: '플럭스 방출기', shape: [[1, 1, 1], [0, 1, 0]], width: 3, height: 2, element: 'plasma', type: 'artifact',
+        stats: { atk: 20, range: 300, fireRate: 500, attackType: 'multi', projectileCount: 3 },
+        desc: '전방으로 플라즈마 입자를 흩뿌려 탄막을 형성합니다.',
+        flavor: '"화면을 가득 채우는 빛."'
+    },
+    {
+        id: 'plasma_core', name: '멜트다운 코어', shape: [[1, 1], [1, 1]], width: 2, height: 2, element: 'plasma', type: 'artifact',
+        stats: { atk: 120, range: 250, fireRate: 3000, attackType: 'nova', aoeRadius: 250 },
+        desc: '핵융합 반응을 임계점까지 끌어올려 주변을 증발시킵니다.',
+        flavor: '"임계점 돌파."'
+    },
+
+    // --- 신비 (Mystic) ---
+    {
+        id: 'mystic_bolt', name: '비전 화살', shape: [[1], [1]], width: 1, height: 2, element: 'mystic', type: 'artifact',
+        stats: { atk: 25, range: 450, fireRate: 1200, attackType: 'normal' },
+        desc: '적을 관통하는 비전 마법의 화살을 발사합니다.',
+        flavor: '"마법은 물리 법칙을 무시하지."'
+    },
+    {
+        id: 'mystic_prism', name: '아케인 프리즘', shape: [[1, 1], [1, 0]], width: 2, height: 2, element: 'mystic', type: 'artifact',
+        stats: { atk: 15, range: 400, fireRate: 1500, attackType: 'multi', projectileCount: 3 },
+        desc: '마력을 여러 갈래로 분산시켜 다수의 적을 동시에 꿰뚫습니다.',
+        flavor: '"지식의 빛은 어디든 닿는다."'
+    },
+    {
+        id: 'mystic_scroll', name: '고대 두루마리', shape: [[1, 1]], width: 2, height: 1, element: 'mystic', type: 'artifact',
+        stats: { atk: 40, range: 500, fireRate: 2000, attackType: 'laser' },
+        desc: '강력한 고대 주문을 영창하여 전방의 적들을 소멸시킵니다.',
+        flavor: '"읽을 수 있겠나?"'
     }
 ];
