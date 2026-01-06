@@ -12,6 +12,7 @@ export default class MainScene extends Phaser.Scene {
     }
 
     create() {
+        this.gameTimer = 0;
         this.uiManager = new UIManager(this);
 
         // Initialize Systems
@@ -50,9 +51,15 @@ export default class MainScene extends Phaser.Scene {
         g.strokeRect(minP, minP, side, side);
     }
 
+    setSpeed(factor) {
+        this.time.timeScale = factor;
+        this.tweens.timeScale = factor;
+    }
+
     update(time, delta) {
+        this.gameTimer += delta;
         if (this.enemySystem) this.enemySystem.update(delta);
-        if (this.towerSystem) this.towerSystem.update(time, this.gridSystem.placedItems);
+        if (this.towerSystem) this.towerSystem.update(this.gameTimer, this.gridSystem.placedItems);
     }
 
     // Expose for UIManager and Systems

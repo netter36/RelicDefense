@@ -65,7 +65,31 @@ export class UIManager {
         }
     }
 
+    initSpeedControls() {
+        const speeds = [1, 2, 4];
+        speeds.forEach(s => {
+            const btn = document.getElementById(`btn-speed-${s}`);
+            if (btn) {
+                btn.onclick = () => {
+                    this.scene.setSpeed(s);
+                    speeds.forEach(os => {
+                        const ob = document.getElementById(`btn-speed-${os}`);
+                        if (ob) {
+                            ob.style.background = '#333';
+                            ob.style.color = '#aaa';
+                            ob.style.border = '1px solid #444';
+                        }
+                    });
+                    btn.style.background = '#6366f1';
+                    btn.style.color = 'white';
+                    btn.style.border = 'none';
+                };
+            }
+        });
+    }
+
     initShop() {
+        this.initSpeedControls();
         ITEMS.forEach(item => {
             if (!item.baseDesc) {
                 item.baseDesc = item.desc.replace(/^\[.*?\]\s*/, '');
