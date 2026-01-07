@@ -584,6 +584,38 @@ export class RenderUtils {
         }
     }
 
+    static getHitEffectTexture(scene, color) {
+        const key = `hit_tex_${color}`;
+        if (scene.textures.exists(key)) return key;
+
+        const g = scene.make.graphics({ x: 0, y: 0, add: false });
+        
+        // Draw Hit Effect
+        // Center at 15, 15 (30x30 texture)
+        
+        // Core Flash
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(15, 15, 5);
+        g.fillStyle(color, 0.6);
+        g.fillCircle(15, 15, 12);
+
+        // Generic Sparks (4 cardinal directions + diagonals)
+        g.lineStyle(2, color, 0.8);
+        g.lineBetween(15, 15, 15, 5);   // Up
+        g.lineBetween(15, 15, 15, 25);  // Down
+        g.lineBetween(15, 15, 5, 15);   // Left
+        g.lineBetween(15, 15, 25, 15);  // Right
+        g.lineBetween(15, 15, 8, 8);    // UL
+        g.lineBetween(15, 15, 22, 22);  // DR
+        g.lineBetween(15, 15, 22, 8);   // UR
+        g.lineBetween(15, 15, 8, 22);   // DL
+
+        g.generateTexture(key, 30, 30);
+        g.destroy();
+        
+        return key;
+    }
+
     static showHitEffect(scene, x, y, color) {
         // Handle color if passed as element string or number
         let finalColor = color;
@@ -593,34 +625,41 @@ export class RenderUtils {
              finalColor = 0xffffff;
         }
 
-        const g = scene.add.graphics();
-        g.setDepth(120); // Above projectiles(100)
-        g.setBlendMode(Phaser.BlendModes.ADD);
+        const textureKey = this.getHitEffectTexture(scene, finalColor);
 
-        // Core Flash (Static)
-        g.fillStyle(0xffffff, 1);
-        g.fillCircle(0, 0, 5); // Draw at relative 0,0
-        g.fillStyle(finalColor, 0.6);
-        g.fillCircle(0, 0, 12);
-
-        // Spark particles (simple lines radiating from center)
-        for(let i=0; i<4; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const len = 10 + Math.random() * 10;
-            g.lineStyle(2, finalColor, 0.8);
-            g.lineBetween(0, 0, Math.cos(angle)*len, Math.sin(angle)*len);
+        if (!scene.projectileGroup) {
+            scene.projectileGroup = scene.add.group({
+                classType: Phaser.GameObjects.Image,
+                maxSize: 300,
+                runChildUpdate: false
+            });
         }
-        
-        g.x = x;
-        g.y = y;
+
+        let effect = scene.projectileGroup.get(x, y, textureKey);
+        if (!effect) {
+            effect = scene.add.image(x, y, textureKey);
+        }
+
+        effect.setTexture(textureKey);
+        effect.setActive(true);
+        effect.setVisible(true);
+        effect.setPosition(x, y);
+        effect.setDepth(120);
+        effect.setBlendMode(Phaser.BlendModes.ADD);
+        effect.setAlpha(1);
+        effect.setScale(1);
+        // Random rotation for variety
+        effect.setRotation(Math.random() * Math.PI * 2);
 
         scene.tweens.add({
-            targets: g,
+            targets: effect,
             alpha: 0,
             scaleX: 0.5,
             scaleY: 0.5,
             duration: 200,
-            onComplete: () => g.destroy()
+            onComplete: () => {
+                RenderUtils.destroyProjectile(effect);
+            }
         });
     }
 
@@ -641,64 +680,133 @@ export class RenderUtils {
         return map[item.element] || 0xffffff;
     }
 
+    static getProjectileTexture(scene, color) {
+        // Ensure color is a number string or valid identifier
+        const key = `proj_tex_${color}`;
+        if (scene.textures.exists(key)) return key;
+
+        // Create texture
+        const g = scene.make.graphics({ x: 0, y: 0, add: false });
+        
+        g.fillStyle(color, 0.4);
+        g.fillCircle(10, 10, 10);
+        g.fillStyle(color, 0.8);
+        g.fillCircle(10, 10, 6);
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(10, 10, 3);
+
+        g.generateTexture(key, 20, 20);
+        g.destroy();
+        
+        return key;
+    }
+
     static createProjectile(scene, x, y, target, item) {
         const color = this.getProjectileColor(item);
+        const textureKey = this.getProjectileTexture(scene, color);
         
-        const g = scene.add.graphics();
-        g.setDepth(100); // Ensure projectiles are above everything
+        // Ensure pool exists
+        if (!scene.projectileGroup) {
+            scene.projectileGroup = scene.add.group({
+                classType: Phaser.GameObjects.Image,
+                maxSize: 300,
+                runChildUpdate: false
+            });
+        }
+
+        // Get from pool
+        let proj = scene.projectileGroup.get(x, y, textureKey);
+
+        if (!proj) {
+            // Pool full or creation failed, force create standalone
+            proj = scene.add.image(x, y, textureKey);
+        }
+
+        // Reset State
+        proj.setTexture(textureKey);
+        proj.setActive(true);
+        proj.setVisible(true);
+        proj.setPosition(x, y);
+        proj.setScale(1);
+        proj.setRotation(0);
+        proj.setAlpha(1);
+        proj.setDepth(100);
+        proj.setBlendMode(Phaser.BlendModes.ADD);
+
+        return proj;
+    }
+
+    static destroyProjectile(proj) {
+        if (proj) {
+            // Return to pool if it belongs to one, otherwise destroy
+            if (proj.active) {
+                proj.setActive(false);
+                proj.setVisible(false);
+            } else {
+                // If it was already inactive or standalone without pool management (fallback)
+                // Just keeping it safe.
+            }
+        }
+    }
+
+    static getArrowTexture(scene, color) {
+        const key = `arrow_tex_${color}`;
+        if (scene.textures.exists(key)) return key;
+
+        const g = scene.make.graphics({ x: 0, y: 0, add: false });
         
-        // 1. Outer Glow (Large, Soft)
-        g.fillStyle(color, 0.4);
-        g.fillCircle(0, 0, 10);
-
-        // 2. Core Glow (Medium, Bright)
-        g.fillStyle(color, 0.8);
-        g.fillCircle(0, 0, 6);
-
-        // 3. Center Hotspot (White, Intense)
-        g.fillStyle(0xffffff, 1);
-        g.fillCircle(0, 0, 3);
+        // Draw Arrow (Centered at 0,0 roughly for texture generation)
+        // We need positive coordinates for texture generation usually, 
+        // or we specify bounds. Let's draw in a 20x40 box.
+        // Center x=10, Tip y=40, Back y=20. Trail y=0.
         
-        // Add blend mode for light effect
-        g.setBlendMode(Phaser.BlendModes.ADD);
+        g.fillStyle(color, 1);
+        g.beginPath();
+        g.moveTo(10, 40);       // Tip
+        g.lineTo(7, 20);        // Left back
+        g.lineTo(10, 25);       // Shaft center
+        g.lineTo(13, 20);       // Right back
+        g.closePath();
+        g.fillPath();
 
-        g.x = x;
-        g.y = y;
+        // Trail
+        g.lineStyle(1, color, 0.5);
+        g.lineBetween(10, 20, 10, 0);
 
-        // Spin animation for dynamic feel
-        scene.tweens.add({
-            targets: g,
-            angle: 360,
-            duration: 500,
-            repeat: -1
-        });
+        g.generateTexture(key, 20, 40);
+        g.destroy();
 
-        return g;
+        return key;
     }
 
     static createArrowRain(scene, x, y, color = 0x4ade80, onImpact) {
-        // Create multiple arrows falling
         const count = 5;
         let impactTriggered = false;
+        const textureKey = this.getArrowTexture(scene, color);
+
+        if (!scene.projectileGroup) {
+            scene.projectileGroup = scene.add.group({
+                classType: Phaser.GameObjects.Image,
+                maxSize: 300,
+                runChildUpdate: false
+            });
+        }
 
         for (let i = 0; i < count; i++) {
-            const arrow = scene.add.graphics();
+            let arrow = scene.projectileGroup.get(x, y - 300, textureKey);
+            if (!arrow) {
+                arrow = scene.add.image(x, y - 300, textureKey);
+            }
+
+            // Reset/Init State
+            arrow.setTexture(textureKey);
+            arrow.setActive(true);
+            arrow.setVisible(true);
             arrow.setDepth(150);
             arrow.setBlendMode(Phaser.BlendModes.ADD);
-
-            // Arrow shape
-            arrow.fillStyle(color, 1);
-            arrow.beginPath();
-            arrow.moveTo(0, 20);       // Tip (Pointing Down)
-            arrow.lineTo(-3, 0);    // Left back
-            arrow.lineTo(0, 5);     // Shaft center
-            arrow.lineTo(3, 0);     // Right back
-            arrow.closePath();
-            arrow.fillPath();
-
-            // Trail (Above the arrow)
-            arrow.lineStyle(1, color, 0.5);
-            arrow.lineBetween(0, 0, 0, -20);
+            arrow.setAlpha(1);
+            arrow.setScale(1);
+            arrow.setRotation(0); // Texture is already vertical
 
             // Randomize start position slightly above target
             const offsetX = (Math.random() - 0.5) * 40;
@@ -716,30 +824,47 @@ export class RenderUtils {
                 duration: duration,
                 ease: 'Linear',
                 onComplete: () => {
-                    // Trigger damage callback only once per volley (or per arrow if needed, but usually once is safer for balance)
+                    // Trigger damage callback only once per volley
                     if (!impactTriggered && onImpact) {
                         impactTriggered = true;
                         onImpact();
                     }
 
                     // Impact effect
-                    const impact = scene.add.graphics();
-                    impact.setDepth(149);
-                    impact.x = arrow.x;
-                    impact.y = arrow.y;
-                    impact.fillStyle(color, 0.8);
-                    impact.fillCircle(0, 0, 3);
+                    // Optimization: Use a simple pooled circle or just a small tween on the arrow before hiding?
+                    // For now, let's just do a quick impact using the arrow itself or a new small graphic.
+                    // To save performance, we can skip the complex impact graphic and just flash the arrow or scale it out.
+                    // Or reuse the projectile group for impact too?
+                    // Let's stick to existing visual but maybe optimized.
+                    // Existing used a new graphics for impact. 
+                    // Let's try to reuse the arrow object as the impact "flash" by changing its scale/texture?
+                    // No, switching texture is fast.
                     
+                    // Let's just do the impact effect using a pooled projectile texture (circle) but scaled down/up
+                    const impactKey = RenderUtils.getProjectileTexture(scene, color); // Reuse projectile texture
+                    let impact = scene.projectileGroup.get(arrow.x, arrow.y, impactKey);
+                    if (!impact) impact = scene.add.image(arrow.x, arrow.y, impactKey);
+                    
+                    impact.setTexture(impactKey);
+                    impact.setActive(true);
+                    impact.setVisible(true);
+                    impact.setDepth(149);
+                    impact.setScale(0.5);
+                    impact.setAlpha(1);
+                    impact.setPosition(arrow.x, arrow.y);
+
                     scene.tweens.add({
                         targets: impact,
                         scaleX: 2,
                         scaleY: 2,
                         alpha: 0,
                         duration: 150,
-                        onComplete: () => impact.destroy()
+                        onComplete: () => {
+                             RenderUtils.destroyProjectile(impact);
+                        }
                     });
                     
-                    arrow.destroy();
+                    RenderUtils.destroyProjectile(arrow);
                 }
             });
         }

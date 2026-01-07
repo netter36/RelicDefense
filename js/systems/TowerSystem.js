@@ -255,7 +255,7 @@ export class TowerSystem {
             y: ty,
             duration: 200,
             onComplete: () => {
-                proj.destroy();
+                RenderUtils.destroyProjectile(proj);
                 if (target.active) {
                     // [New Visual] Spear Strike for Thunder/Judgement or Arrow Rain for Leaf
                     if (tower.id === 'thunder_heavy' || tower.id === 'judgement_prism' || tower.activeSynergy === '전격의 시너지') {
@@ -422,7 +422,7 @@ export class TowerSystem {
         const bomb = RenderUtils.createProjectile(this.scene, startX, startY, target, tower);
         
         // 추가적인 Bomb 스타일링 (약간 더 크게)
-        bomb.scale = 1.5;
+        bomb.setScale(1.5);
 
         this.scene.tweens.add({
             targets: bomb,
@@ -432,7 +432,7 @@ export class TowerSystem {
             onComplete: () => {
                 const hitX = target.active ? target.x : bomb.x;
                 const hitY = target.active ? target.y : bomb.y;
-                bomb.destroy();
+                RenderUtils.destroyProjectile(bomb);
                 
                 // Explode at target location
                 const hit = this.calculateDamage(tower);
