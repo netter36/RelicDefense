@@ -1,4 +1,4 @@
-import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, SLOT_SIZE, THEME } from './constants.js';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, SLOT_SIZE, THEME, GAME_CONFIG } from './constants.js';
 import { UIManager } from './systems/UIManager.js';
 import { GridSystem } from './systems/GridSystem.js';
 import { EnemySystem } from './systems/EnemySystem.js';
@@ -12,8 +12,12 @@ export default class MainScene extends Phaser.Scene {
     }
 
     create() {
+        this.gold = GAME_CONFIG.INITIAL_GOLD;
+        this.lives = GAME_CONFIG.INITIAL_LIVES;
         this.gameTimer = 0;
         this.uiManager = new UIManager(this);
+        this.uiManager.updateGold(this.gold);
+        // this.uiManager.updateLives(this.lives); // Removed: Game Over based on monster count now
 
         // Initialize Systems
         this.gridSystem = new GridSystem(this, this.uiManager);
@@ -57,9 +61,46 @@ export default class MainScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this.isGameOver) return;
         this.gameTimer += delta;
         if (this.enemySystem) this.enemySystem.update(delta);
         if (this.towerSystem) this.towerSystem.update(this.gameTimer, this.gridSystem.placedItems);
+    }
+
+    addGold(amount) {
+        this.gold += amount;
+        this.uiManager.updateGold(this.gold);
+        this.uiManager.renderItems(); // Update shop availability
+    }
+
+    spendGold(amount) {
+        if (this.gold >= amount) {
+            this.gold -= amount;
+            this.uiManager.updateGold(this.gold);
+            this.uiManager.renderItems(); // Update shop availability
+            return true;
+        }
+        return false;
+    }
+
+    takeDamage(amount) {
+        this.lives -= amount;
+        if (this.lives <= 0) {
+            this.lives = 0;
+            this.gameOver();
+        }
+        this.uiManager.updateLives(this.lives);
+    }
+
+    gameOver() {
+        this.isGameOver = true;
+        this.add.rectangle(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, CANVAS_WIDTH, CANVAS_HEIGHT, 0x000000, 0.7).setDepth(1000);
+        this.add.text(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, 'GAME OVER', {
+            fontSize: '64px',
+            color: '#ff0000',
+            fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(1001);
+        this.scene.pause();
     }
 
     // Expose for UIManager and Systems

@@ -6,16 +6,25 @@
 
 [![Play Now](https://img.shields.io/badge/🎮_Play_Now-GitHub_Pages-blue?style=for-the-badge)](https://netter36.github.io/RelicDefense/)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Phaser 3](https://img.shields.io/badge/Phaser-3.60.0-9e59ff)](https://phaser.io/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-f7df1e)](https://www.javascript.com/)
+
 ---
 
 ## 📋 목차
 
 - [게임 개요](#-게임-개요)
+- [주요 특징](#-주요-특징)
 - [핵심 시스템](#-핵심-시스템)
 - [유물 도감](#-유물-도감)
 - [몬스터 정보](#-몬스터-정보)
 - [조작법](#️-조작법)
 - [기술 스택](#️-기술-스택)
+- [로컬 실행](#-로컬-실행)
+- [개발 가이드](#-개발-가이드)
+- [게임 밸런스](#-게임-밸런스)
+- [성능 최적화](#-성능-최적화)
 
 ---
 
@@ -27,13 +36,43 @@
 ### 핵심 메커니즘
 1. **그리드 기반 배치**: 7×7 격자에 테트리스 스타일의 유물 배치
 2. **속성 시너지**: 같은 속성을 인접 배치하여 강력한 보너스 획득
-3. **다양한 공격 타입**: 7가지 고유한 공격 방식
-4. **무한 난이도**: 시간이 지날수록 강해지는 적들
+3. **다양한 공격 타입**: 7가지 고유한 공격 방식 (Normal, Rapid, Laser, Nova, Bomb, Multi, Chain)
+4. **8가지 속성**: Fire, Ice, Thunder, Leaf, Gem, Shadow, Plasma, Mystic
+5. **무한 난이도**: 시간이 지날수록 강해지는 적들
+6. **실시간 전투**: 60 FPS 부드러운 액션
 
 ### 게임 목표
 - 최적의 공간 활용과 속성 시너지를 통해 난공불락의 요새 건설
 - 끝없이 몰려오는 몬스터 웨이브 생존
 - 전략적 유물 배치로 최대 효율 달성
+- 다양한 속성과 공격 타입을 조합하여 최강의 조합 발견
+
+---
+
+## ✨ 주요 특징
+
+### 🧩 혁신적인 배치 시스템
+- **간소화된 형태**: 석판 1×1, 아티팩트 2×1 도미노
+- **자유로운 재배치**: 드래그 앤 드롭으로 언제든지 전략 수정
+- **스마트 회전**: R 키로 90도 회전하여 공간 최적화
+- **실시간 시너지 계산**: 배치 즉시 보너스 적용
+
+### ⚔️ 전략적 깊이
+- **8가지 속성 시너지**: 각 속성마다 고유한 보너스 효과
+- **7가지 공격 타입**: 상황에 맞는 공격 방식 선택
+- **4종의 디버프**: Poison, Slow, Stun, Vulnerable로 적 약화
+- **치명타 시스템**: 확률 기반 2배 데미지
+
+### 🎨 시각적 완성도
+- **절차적 그래픽**: 모든 유물이 고유한 디자인으로 자동 생성
+- **속성별 색상**: 8가지 테마 컬러로 직관적인 구분
+- **화려한 이펙트**: 공격, 폭발, 빔, 연쇄 등 다양한 시각 효과
+- **다크 모드 UI**: 눈이 편안한 다크 테마
+
+### 📈 진행형 난이도
+- **동적 밸런싱**: 시간에 따라 적 체력과 스폰 속도 증가
+- **4종 몬스터**: 각기 다른 특성을 가진 적들
+- **실시간 위험도 표시**: 현재 난이도와 보너스 확인
 
 ---
 
@@ -47,14 +86,15 @@
 - **캔버스**: 650×650 픽셀
 
 #### 배치 규칙
-- **폴리오미노 형태**: 모든 유물은 테트리스와 유사한 블록 형태
-  - 모노미노 (1칸): `■`
-  - 도미노 (2칸): `■■` 또는 `■`<br>`■`
-  - 트리미노 (3칸): `■■■` 또는 L자형
-  - 테트로미노 (4칸): 정사각형 등
+- **석판 (Tablet)**: 1×1 모노미노 `■`
+  - 공격하지 않지만 버프 제공
+  - 빈 공간을 효율적으로 채우기
+- **아티팩트 (Artifact)**: 2×1 또는 1×2 도미노 `■■` 또는 `■`<br>`■`
+  - 실제 공격을 수행
+  - 회전 가능하여 가로/세로 배치
 - **충돌 검사**: 기존 유물과 겹칠 수 없음
 - **자유로운 재배치**: 드래그로 언제든지 위치 변경 가능
-- **회전 기능**: R 키로 90도 회전 (형태에 따라 제한)
+- **회전 기능**: R 키로 90도 회전 (도미노만 가능)
 - **자동 배치**: 구매 시 빈 공간 자동 탐색
 
 #### 스마트 배치 알고리즘
@@ -85,6 +125,9 @@ for (let y = 0; y < GRID_HEIGHT; y++) {
 | ⚡ **Thunder** | 전격의 시너지 | 2개 | 공격 속도 **+30%** | 연사형 타워와 조합하여 DPS 폭증 |
 | 🌿 **Leaf** | 생명의 시너지 | 2개 | 사거리 **+15%** | 넓은 범위 커버로 안정적인 방어선 |
 | 💎 **Gem** | 보석의 시너지 | 2개 | 치명타 확률 **+10%** | 확률 기반 폭발 데미지 (2배) |
+| 🌑 **Shadow** | 그림자의 시너지 | 2개 | 처형 (HP 30% 이하 2배) | 체력 낮은 적 신속 제거 |
+| 🔮 **Plasma** | 플라즈마의 시너지 | 2개 | 폭발 범위 **+50%** | 광역 공격 효율 극대화 |
+| ✨ **Mystic** | 신비의 시너지 | 2개 | 관통 **+1** | 적을 뚫고 뒤의 적까지 공격 |
 
 #### 시너지 계산 알고리즘
 - **인접성 검사**: BFS 기반 연결 그래프 탐색
@@ -204,6 +247,27 @@ for (let y = 0; y < GRID_HEIGHT; y++) {
 | **심판의 프리즘** | 2×2 | Chain | 18 | 350 | 1200ms | 3회 연쇄 |
 | **공허의 눈** | 2×2 | Laser | 15 | 450 | 2000ms | 취약 50% (3초) |
 
+### 🌑 Shadow (그림자)
+
+| 유물 | 형태 | 공격 타입 | 공격력 | 사거리 | 공속 | 특수 능력 |
+|:---|:---:|:---:|:---:|:---:|:---:|:---|
+| **어둠의 화살** | 2×1 | Normal | 30 | 400 | 1200ms | 빠른 암흑 추적 공격 |
+| **사신의 낫** | 2×2 | Chain | 45 | 300 | 1800ms | 4회 연쇄, 처형 효과 |
+
+### 🔮 Plasma (플라즈마)
+
+| 유물 | 형태 | 공격 타입 | 공격력 | 사거리 | 공속 | 특수 능력 |
+|:---|:---:|:---:|:---:|:---:|:---:|:---|
+| **플라즈마 슈터** | 2×1 | Multi | 20 | 300 | 500ms | 3발 탄막 |
+| **멜트다운 코어** | 2×2 | Nova | 120 | 250 | 3000ms | 대규모 AoE (250 반경) |
+
+### ✨ Mystic (신비)
+
+| 유물 | 형태 | 공격 타입 | 공격력 | 사거리 | 공속 | 특수 능력 |
+|:---|:---:|:---:|:---:|:---:|:---:|:---|
+| **신비의 서** | 1×3 | Multi | 25 | 350 | 800ms | 3발 마법 미사일 |
+| **고대 두루마리** | 2×1 | Laser | 40 | 500 | 2000ms | 강력한 관통 빔 |
+
 ---
 
 ## � 몬스터 정보
@@ -257,26 +321,77 @@ for (let y = 0; y < GRID_HEIGHT; y++) {
 
 ### 프론트엔드
 - **Phaser 3.60.0** - HTML5 게임 엔진
+  - Canvas 기반 2D 렌더링
+  - 물리 엔진 및 충돌 감지
+  - 파티클 시스템 및 애니메이션
 - **Vanilla JavaScript (ES6+)** - 모듈화된 아키텍처
+  - ES6 Modules로 코드 분리
+  - Class-based 시스템 설계
+  - 비동기 처리 (async/await)
 - **HTML5 Canvas** - 2D 렌더링
 - **CSS3** - UI 스타일링
+  - CSS Grid & Flexbox 레이아웃
+  - CSS 변수로 테마 관리
+  - Keyframe 애니메이션
 
-### 아키텍처
+### 폰트
+- **Press Start 2P** - 픽셀 아트 스타일 폰트
+- **Orbit** - 한글 지원 게임 폰트
 
-#### 모듈 구조
+### 개발 도구
+- **Git** - 버전 관리
+- **GitHub Pages** - 호스팅
+- **VS Code** - 권장 IDE
+
+### 외부 라이브러리
+```html
+<!-- CDN을 통한 Phaser 로드 -->
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Orbit&family=Press+Start+2P&display=swap" rel="stylesheet">
 ```
-js/
-├── main.js                 # 진입점, Phaser 설정
-├── scene.js                # 메인 게임 씬
-├── constants.js            # 게임 상수 정의
-├── items.js                # 유물 데이터베이스
-└── systems/
-    ├── GridSystem.js       # 그리드 관리 & 시너지 계산
-    ├── TowerSystem.js      # 전투 로직 & 공격 타입
-    ├── EnemySystem.js      # 몬스터 스폰 & AI
-    ├── UIManager.js        # DOM 기반 UI 업데이트
-    └── InputSystem.js      # 입력 처리 & 카메라
+
+---
+
+## 📁 프로젝트 구조
+
 ```
+RelicDefense/
+│
+├── index.html              # 메인 HTML 파일
+├── style.css               # 게임 UI 스타일시트
+├── README.md               # 프로젝트 문서
+├── .nojekyll               # GitHub Pages 설정
+│
+└── js/                     # JavaScript 소스 코드
+    ├── main.js             # 🎮 Phaser 엔진 초기화 및 설정
+    ├── scene.js            # 🎬 메인 게임 씬 (게임 루프)
+    ├── constants.js        # ⚙️ 게임 상수 및 설정값
+    │
+    ├── data/               # 📊 게임 데이터
+    │   ├── items.js        # 유물 데이터베이스 (30+ 유물)
+    │   └── monsters.js     # 몬스터 데이터베이스
+    │
+    ├── systems/            # 🔧 핵심 게임 시스템
+    │   ├── GridSystem.js   # 그리드 관리 & 시너지 계산
+    │   ├── TowerSystem.js  # 전투 로직 & 공격 타입
+    │   ├── EnemySystem.js  # 몬스터 스폰 & AI
+    │   ├── UIManager.js    # DOM 기반 UI 업데이트
+    │   └── InputSystem.js  # 입력 처리 & 카메라 제어
+    │
+    └── utils/              # 🛠️ 유틸리티 함수
+        ├── RenderUtils.js  # 절차적 그래픽 렌더링
+        └── helpers.js      # 헬퍼 함수 모음
+```
+
+### 주요 파일 설명
+
+#### 📄 index.html
+- 게임 컨테이너 구조 정의
+- 좌측 패널: 시너지 정보 및 게임 통계
+- 중앙: Phaser 게임 캔버스
+- 우측 패널: 아이템 상점
 
 #### 주요 시스템
 
@@ -341,25 +456,245 @@ ELEMENT_COLORS = {
 
 ## 🚀 로컬 실행
 
-### 요구사항
-- 웹 브라우저 (Chrome, Firefox, Edge 등)
-- 로컬 HTTP 서버
+### ⚙️ 시스템 요구사항
 
-### 실행 방법
+#### 필수 사항
+- **웹 브라우저**: Chrome 90+, Firefox 88+, Edge 90+, Safari 14+
+- **로컬 HTTP 서버**: Python, Node.js, 또는 기타 HTTP 서버
 
+#### 권장 사양
+- **해상도**: 1920x1080 이상
+- **메모리**: 4GB RAM 이상
+- **프로세서**: 듀얼 코어 2GHz 이상
+
+### 📥 설치 및 실행
+
+#### 방법 1: Python (가장 간단)
 ```bash
 # 1. 저장소 클론
 git clone https://github.com/netter36/RelicDefense.git
 cd RelicDefense
 
-# 2. HTTP 서버 실행 (Python)
+# 2. Python 내장 서버 실행
 python -m http.server 8000
-
-# 또는 Node.js
-npx http-server -p 8000
+# 또는 Python 2
+python -m SimpleHTTPServer 8000
 
 # 3. 브라우저에서 열기
 # http://localhost:8000
+```
+
+#### 방법 2: Node.js
+```bash
+# 1. 저장소 클론
+git clone https://github.com/netter36/RelicDefense.git
+cd RelicDefense
+
+# 2. http-server 설치 및 실행
+npx http-server -p 8000
+# 또는 전역 설치 후 실행
+npm install -g http-server
+http-server -p 8000
+
+# 3. 브라우저에서 열기
+# http://localhost:8000
+```
+
+#### 방법 3: VS Code Live Server
+```bash
+# 1. VS Code에서 프로젝트 폴더 열기
+# 2. Live Server 확장 설치
+# 3. index.html 우클릭 → "Open with Live Server"
+```
+
+#### 방법 4: 직접 파일 열기 (권장하지 않음)
+```bash
+# ⚠️ CORS 정책으로 인해 일부 기능이 작동하지 않을 수 있습니다
+# index.html을 더블클릭하여 브라우저에서 직접 열기
+```
+
+### ✅ 설치 확인
+
+게임이 정상적으로 로드되면:
+1. "SEPHIRIA INVENTORY" 헤더가 표시됩니다
+2. 중앙에 7×7 그리드가 보입니다
+3. 우측에 아이템 상점이 표시됩니다
+4. 몬스터가 자동으로 스폰되기 시작합니다
+
+### 🔧 문제 해결
+
+#### CORS 오류 발생 시
+```bash
+# Chrome을 CORS 비활성화 모드로 실행 (Windows)
+chrome.exe --user-data-dir="C:/Chrome dev session" --disable-web-security
+
+# 또는 로컬 서버 사용 (권장)
+```
+
+#### 게임이 로드되지 않을 때
+1. 브라우저 콘솔(F12)에서 에러 확인
+2. Phaser CDN 연결 확인
+3. 캐시 삭제 후 재시도 (Ctrl+Shift+R)
+
+---
+
+## 💻 개발 가이드
+
+### 🏗️ 새로운 유물 추가하기
+
+#### 1. `js/data/items.js`에 데이터 추가
+```javascript
+{
+    id: 'my_artifact',              // 고유 ID
+    name: '나의 유물',              // 표시 이름
+    shape: [[1, 1], [1, 0]],       // L자 형태 (2x2)
+    width: 2,
+    height: 2,
+    element: 'fire',                // 속성
+    type: 'artifact',               // 'artifact' 또는 'tablet'
+    stats: {
+        atk: 50,                    // 공격력
+        range: 300,                 // 사거리
+        fireRate: 1000,             // 공격 속도 (ms)
+        attackType: 'normal'        // 공격 타입
+    },
+    desc: '유물 설명',
+    flavor: '풍미 텍스트'
+}
+```
+
+#### 2. 형태(Shape) 정의하기
+```javascript
+// 1x1 (모노미노)
+shape: [[1]]
+
+// 2x1 (가로 도미노)
+shape: [[1, 1]]
+
+// 1x2 (세로 도미노)
+shape: [[1], [1]]
+
+// L자 (트리미노)
+shape: [[1, 1], [1, 0]]
+
+// 정사각형 (2x2)
+shape: [[1, 1], [1, 1]]
+
+// T자 (테트로미노)
+shape: [[1, 1, 1], [0, 1, 0]]
+```
+
+### 🎨 새로운 속성 추가하기
+
+#### 1. `js/constants.js`에 색상 추가
+```javascript
+export const ELEMENT_COLORS = {
+    // 기존 속성...
+    myElement: 0xff6b6b  // 새 속성 색상 (HEX)
+};
+```
+
+#### 2. 시너지 정의
+```javascript
+export const SYNERGIES = [
+    // 기존 시너지...
+    {
+        id: 'my_synergy',
+        name: '나의 시너지',
+        element: 'myElement',
+        req: 2,                      // 최소 필요 개수
+        desc: '효과 설명'
+    }
+];
+```
+
+#### 3. `js/systems/GridSystem.js`에서 시너지 효과 구현
+```javascript
+// getSynergyStats() 메서드에 추가
+if (activeSynergies.has('my_synergy')) {
+    stats.customBonus = 1.5;  // 예: 50% 보너스
+}
+```
+
+### ⚔️ 새로운 공격 타입 추가하기
+
+#### 1. `js/constants.js`에 상수 추가
+```javascript
+export const ATTACK_TYPES = {
+    // 기존 타입...
+    MY_ATTACK: 'my_attack'
+};
+```
+
+#### 2. `js/systems/TowerSystem.js`에서 공격 로직 구현
+```javascript
+// attackTarget() 메서드에 케이스 추가
+case ATTACK_TYPES.MY_ATTACK:
+    this.fireMyAttack(artifact, target);
+    break;
+
+// 새 메서드 구현
+fireMyAttack(artifact, target) {
+    // 공격 로직 작성
+    const projectile = this.scene.add.circle(
+        artifact.sprite.x,
+        artifact.sprite.y,
+        8,
+        ELEMENT_COLORS[artifact.element]
+    );
+    
+    // 투사체 물리
+    this.scene.tweens.add({
+        targets: projectile,
+        x: target.sprite.x,
+        y: target.sprite.y,
+        duration: 300,
+        onComplete: () => {
+            this.dealDamage(target, artifact.stats.atk);
+            projectile.destroy();
+        }
+    });
+}
+```
+
+### 🐛 디버깅 팁
+
+#### 콘솔 로그 활성화
+```javascript
+// js/scene.js 또는 각 시스템 파일에서
+console.log('현재 유물 수:', this.gridSystem.placedItems.length);
+console.log('활성 시너지:', this.gridSystem.activeSynergies);
+console.log('몬스터 상태:', this.enemySystem.monsters);
+```
+
+#### Phaser 디버그 모드
+```javascript
+// js/main.js에서 설정
+const config = {
+    // ...
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: true  // 충돌 박스 표시
+        }
+    }
+};
+```
+
+### 📊 성능 프로파일링
+
+```javascript
+// js/scene.js의 update() 메서드에서
+update(time, delta) {
+    const startTime = performance.now();
+    
+    // 게임 로직...
+    
+    const endTime = performance.now();
+    if (endTime - startTime > 16) {  // 60 FPS 기준
+        console.warn('느린 프레임 감지:', endTime - startTime, 'ms');
+    }
+}
 ```
 
 ---
@@ -383,58 +718,43 @@ npx http-server -p 8000
 
 ---
 
-## �📝 개발 로드맵
+## ⚡ 성능 최적화
 
-### 완료된 기능 ✅
-- [x] 그리드 시스템 및 배치 로직
-- [x] 7가지 공격 타입 구현
-- [x] 속성 시너지 시스템
-- [x] 4종 몬스터 타입
-- [x] 디버프 시스템
-- [x] 치명타 시스템
-- [x] 절차적 그래픽 렌더링
-- [x] UI/UX 완성
+### 현재 적용된 최적화
 
-### 향후 계획 🔮
-- [ ] 웨이브 시스템 개선
-- [ ] 보스 몬스터 추가
-- [ ] 업그레이드 시스템
-- [ ] 세이브/로드 기능
-- [ ] 도전 과제 시스템
-- [ ] 사운드 & 음악
+#### 오브젝트 풀링
+- **투사체 재사용**: 매번 생성/파괴 대신 오브젝트 풀에서 재사용
+- **이펙트 관리**: 파티클 및 시각 효과 풀링
+- **적 관리**: 몬스터 오브젝트 재활용
 
----
+#### 렌더링 최적화
+- **레이어 분리**: Static/Dynamic 오브젝트 분리
+- **Culling**: 화면 밖 오브젝트 렌더링 스킵
+- **Batch Rendering**: Phaser의 자동 배칭 활용
 
-## 📄 라이선스
+#### 계산 최적화
+- **시너지 캐싱**: 변경 시에만 재계산
+- **거리 계산 최적화**: 제곱근 계산 최소화
+- **Update 빈도 조절**: 불필요한 업데이트 방지
 
-MIT License - 자유롭게 사용, 수정, 배포 가능
+### 성능 모니터링
 
----
+```javascript
+// 개발자 도구 콘솔에서 실행
+// FPS 표시
+const stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.dom);
 
-## 🎮 지금 플레이하기!
+function animate() {
+    stats.begin();
+    // 게임 렌더링
+    stats.end();
+    requestAnimationFrame(animate);
+}
+```
 
-**[https://netter36.github.io/RelicDefense/](https://netter36.github.io/RelicDefense/)**
-
----
-
-## 🤝 기여
-
-버그 리포트, 기능 제안, PR 환영합니다!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📧 문의
-
-프로젝트 링크: [https://github.com/netter36/RelicDefense](https://github.com/netter36/RelicDefense)
-
----
-
-*Created with ❤️ for strategy game enthusiasts*
-
-**Made with Phaser 3 | Powered by JavaScript**
+### 권장 브라우저 설정
+- **하드웨어 가속 활성화**
+- **팝업 차단 해제** (전체화면용)
+- **충분한 메모리 확보**

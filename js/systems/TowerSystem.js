@@ -178,21 +178,7 @@ export class TowerSystem {
         let dmg = hit.dmg;
         if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
 
-        if (hit.crit) {
-            this.showDamageText(target.x, target.y, dmg, true);
-        } else {
-            this.showDamageText(target.x, target.y, dmg, false);
-        }
-
-        target.hp -= dmg;
-        this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
-        this.createHitEffect(target.x, target.y, tower.element);
-
-        this.scene.updateHPBar(target);
-        if (target.hp <= 0) {
-            if (this.scene.enemySystem) this.scene.enemySystem.killMonster(target);
-            else { target.destroy(); this.scene.updateMonsterCount(); }
-        }
+        this.applyDamage(target, dmg, hit.crit, tower);
 
         if (jumps > 1) {
             // Find next target from CURRENT target pos
@@ -323,14 +309,25 @@ export class TowerSystem {
     applyDamage(target, dmg, isCrit, tower) {
         if (!target.active) return;
         this.showDamageText(target.x, target.y, dmg, isCrit);
-        target.hp -= dmg;
-        this.scene.updateHPBar(target);
-        this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
-        this.createHitEffect(target.x, target.y, tower.element);
+        
+        // Delegate to EnemySystem for consistent damage handling and rewards
+        if (this.scene.enemySystem && this.scene.enemySystem.takeDamage) {
+            this.scene.enemySystem.takeDamage(target, dmg, isCrit);
+        } else {
+            // Fallback
+            target.hp -= dmg;
+            this.scene.updateHPBar(target);
+            if (target.hp <= 0) {
+                target.destroy();
+                this.scene.updateMonsterCount();
+            }
+        }
 
-        if (target.hp <= 0) {
-            if (this.scene.enemySystem) this.scene.enemySystem.killMonster(target);
-            else { target.destroy(); this.scene.updateMonsterCount(); }
+        if (tower && tower.stats && tower.stats.debuff) {
+            this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
+        }
+        if (tower) {
+            this.createHitEffect(target.x, target.y, tower.element);
         }
     }
 
@@ -352,17 +349,8 @@ export class TowerSystem {
         let dmg = hit.dmg * COMBAT_CONFIG.LASER_DAMAGE_MULT; // Laser ticks often
         if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
 
-        if (Math.random() < 0.3) this.showDamageText(target.x, target.y, dmg, hit.crit);
-
-        target.hp -= dmg;
-        this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
-        this.createHitEffect(target.x, target.y, tower.element);
-
-        this.scene.updateHPBar(target);
-        if (target.hp <= 0) {
-            if (this.scene.enemySystem) this.scene.enemySystem.killMonster(target);
-            else { target.destroy(); this.scene.updateMonsterCount(); }
-        }
+        // Apply Damage using centralized helper
+        this.applyDamage(target, dmg, hit.crit, tower);
     }
 
     fireNova(tower, origin) {
@@ -389,8 +377,8 @@ export class TowerSystem {
                     const hit = this.calculateDamage(tower);
                     let dmg = hit.dmg;
                     if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
-                    this.showDamageText(m.x, m.y, dmg, hit.crit);
-                    this.damageMonster(m, dmg);
+                    
+                    this.applyDamage(m, dmg, hit.crit, tower);
                 }
             });
         }
@@ -400,8 +388,11 @@ export class TowerSystem {
         const startX = origin ? origin.x : tower.x;
         const startY = origin ? origin.y : tower.y;
 
-        const bomb = this.scene.add.circle(startX, startY, 8, 0xff0000);
-        this.scene.physics.add.existing(bomb);
+        // RenderUtils를 사용하여 통일된 투사체 생성 (Depth 100 적용됨)
+        const bomb = RenderUtils.createProjectile(this.scene, startX, startY, tower.element);
+        
+        // 추가적인 Bomb 스타일링 (약간 더 크게)
+        bomb.scale = 1.5;
 
         this.scene.tweens.add({
             targets: bomb,
@@ -409,10 +400,11 @@ export class TowerSystem {
             y: target.y,
             duration: 400,
             onComplete: () => {
-                bomb.destroy();
-                // Explode at target location
                 const hitX = target.active ? target.x : bomb.x;
                 const hitY = target.active ? target.y : bomb.y;
+                bomb.destroy();
+                
+                // Explode at target location
                 const hit = this.calculateDamage(tower);
                 this.createExplosion(hitX, hitY, tower.stats.aoeRadius || COMBAT_CONFIG.BOMB_RADIUS, hit.dmg, hit.crit);
             }
@@ -422,7 +414,7 @@ export class TowerSystem {
     createExplosion(x, y, radius, damage, isCrit) {
         // Visual
         const blast = this.scene.add.circle(x, y, 10, 0xffaa00, 0.6);
-        blast.setDepth(25);
+        blast.setDepth(100); // 폭발 이펙트도 Depth 100으로 상향
         this.scene.tweens.add({
             targets: blast,
             radius: radius,
@@ -438,20 +430,25 @@ export class TowerSystem {
                 if (Phaser.Math.Distance.Between(x, y, m.x, m.y) <= radius) {
                     let finalDmg = damage;
                     if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) finalDmg *= COMBAT_CONFIG.VULNERABLE_MULT;
-                    this.showDamageText(m.x, m.y, finalDmg, isCrit);
-                    this.damageMonster(m, finalDmg);
+                    
+                    this.scene.enemySystem.takeDamage(m, Math.floor(finalDmg), isCrit);
                 }
             });
         }
     }
 
     damageMonster(monster, damage) {
-        monster.hp -= damage;
-        this.scene.updateHPBar(monster);
-        if (monster.hp <= 0) {
-            if (monster.hpBar) monster.hpBar.destroy();
-            monster.destroy();
-            this.scene.updateMonsterCount();
+        // Deprecated in favor of applyDamage/EnemySystem.takeDamage
+        if (this.scene.enemySystem && this.scene.enemySystem.takeDamage) {
+            this.scene.enemySystem.takeDamage(monster, damage, false);
+        } else {
+            monster.hp -= damage;
+            this.scene.updateHPBar(monster);
+            if (monster.hp <= 0) {
+                if (monster.hpBar) monster.hpBar.destroy();
+                monster.destroy();
+                this.scene.updateMonsterCount();
+            }
         }
     }
 }

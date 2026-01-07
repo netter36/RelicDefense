@@ -1,4 +1,4 @@
-import { DIFFICULTY_CONFIG } from '../constants.js';
+import { DIFFICULTY_CONFIG, GAME_CONFIG } from '../constants.js';
 import { MONSTER_TYPES } from '../data/monsters.js';
 import { RenderUtils } from '../utils/RenderUtils.js';
 
@@ -132,7 +132,8 @@ export class EnemySystem {
 
             m.t += m.speed * speedMult * (delta / 16);
             if (m.t >= 1) {
-                m.t -= 1;
+                // Reached end -> Loop back to start (Game Over is based on count)
+                m.t -= 1; 
             }
 
             const p = this.path.getPoint(m.t);
@@ -186,9 +187,64 @@ export class EnemySystem {
 
     killMonster(m) {
         if (!m.active) return;
+        
+        // 3. 몬스터 사망 시 HP 바 제거 확실하게 처리
+        if (m.hpBar) {
+            m.hpBar.clear(); // 그래픽 내용 지우기
+            m.hpBar.destroy(); // 객체 파괴
+            m.hpBar = null; // 참조 제거
+        }
+        
         m.destroy();
-        if (m.hpBar) m.hpBar.destroy();
         this.updateMonsterCount();
+    }
+
+    takeDamage(m, damage, isCrit) {
+        if (!m.active) return;
+        
+        m.hp -= damage;
+        this.updateHPBar(m);
+        
+        // Damage text handled by TowerSystem usually, but if we need generic hit effect:
+        // RenderUtils.showHitEffect(this.scene, m.x, m.y);
+
+        if (m.hp <= 0) {
+            // Reward Gold
+            // Base reward * difficulty factor? Or flat? Let's do flat + small bonus
+            const reward = Math.floor(GAME_CONFIG.MONSTER_REWARD * (1 + (this.difficulty - 1) * 0.5));
+            this.scene.addGold(reward);
+            
+            // Floating Gold Text
+            this.showGoldText(m.x, m.y, reward);
+
+            // HP 바 제거 및 몬스터 파괴
+            if (m.hpBar) {
+                m.hpBar.clear();
+                m.hpBar.destroy();
+                m.hpBar = null;
+            }
+            m.destroy();
+            this.updateMonsterCount();
+        }
+    }
+
+    showGoldText(x, y, amount) {
+        const txt = this.scene.add.text(x, y - 20, `+${amount}G`, {
+            fontSize: '16px',
+            color: '#ffd700',
+            fontStyle: 'bold',
+            stroke: '#000',
+            strokeThickness: 3
+        }).setOrigin(0.5).setDepth(100);
+
+        this.scene.tweens.add({
+            targets: txt,
+            y: y - 50,
+            alpha: 0,
+            duration: 800,
+            ease: 'Back.out',
+            onComplete: () => txt.destroy()
+        });
     }
 
     updateHPBar(m) {

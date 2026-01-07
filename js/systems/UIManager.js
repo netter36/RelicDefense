@@ -1,5 +1,5 @@
 import { ITEMS } from '../data/items.js';
-import { ELEMENT_COLORS, SYNERGIES, COMBAT_CONFIG } from '../constants.js';
+import { ELEMENT_COLORS, SYNERGIES, COMBAT_CONFIG, GAME_CONFIG } from '../constants.js';
 
 export class UIManager {
     constructor(scene) {
@@ -7,8 +7,10 @@ export class UIManager {
 
         this.shopTags = document.getElementById('shop-tags');
         this.shopList = document.getElementById('item-shop');
+        this.shopTabs = document.getElementById('shop-tabs');
         this.tooltip = document.getElementById('tooltip');
         this.activeTag = '전체';
+        this.activeTab = 'artifact'; // 기본 탭: 아티팩트
         this.searchQuery = '';
     }
 
@@ -48,9 +50,24 @@ export class UIManager {
         }
     }
 
+    updateGold(amount) {
+        const el = document.getElementById('stat-gold');
+        if (el) el.innerText = amount;
+    }
+
     updateMonsterCount(count) {
         const el = document.getElementById('monster-count');
-        if (el) el.innerText = count;
+        if (el) {
+            const max = GAME_CONFIG.MAX_MONSTERS || 150;
+            el.innerText = `${count} / ${max}`;
+            
+            // 위험도 표시 (80% 이상일 때 빨간색 경고)
+            if (count >= max * 0.8) {
+                el.style.color = '#ff4444';
+            } else {
+                el.style.color = '#ffffff';
+            }
+        }
     }
 
     updateDifficultyInfo(difficulty, interval, time) {
@@ -113,13 +130,46 @@ export class UIManager {
             }
         });
 
+        this.renderShopTabs(); // 탭 렌더링
         this.renderTags();
         this.renderItems();
     }
 
+    renderShopTabs() {
+        if (!this.shopTabs) return;
+
+        // 탭 버튼에 이벤트 리스너 추가 (HTML에 이미 버튼이 있다고 가정하거나 동적 생성 가능)
+        // 여기서는 HTML에 추가한 버튼을 사용
+        const btns = this.shopTabs.querySelectorAll('.shop-tab-btn');
+        btns.forEach(btn => {
+            btn.onclick = () => {
+                const tab = btn.dataset.tab;
+                if (this.activeTab !== tab) {
+                    this.activeTab = tab;
+                    this.activeTag = '전체'; // 탭 전환 시 태그 초기화
+                    
+                    // Update Active Class
+                    btns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    this.renderTags();
+                    this.renderItems();
+                }
+            };
+        });
+    }
+
     renderTags() {
         if (!this.shopTags) return;
-        const tags = ['전체', '화염', '냉기', '전격', '대지', '심연', '석판', '아티팩트']; // Basic tags for now
+        
+        let tags = [];
+        if (this.activeTab === 'artifact') {
+            tags = ['전체', '화염', '냉기', '전격', '대지', '심연', '플라즈마', '신비', '그림자'];
+        } else {
+            // Module (Tablet) Tags
+            tags = ['전체', '공격', '범위', '특수']; 
+        }
+
         this.shopTags.innerHTML = '';
         tags.forEach(tag => {
             const btn = document.createElement('button');
@@ -139,7 +189,9 @@ export class UIManager {
         this.shopList.innerHTML = '';
 
         const TAG_MAP = {
-            'fire': '화염', 'ice': '냉기', 'thunder': '전격', 'leaf': '대지', 'gem': '심연', 'tablet': '석판', 'artifact': '아티팩트'
+            'fire': '화염', 'ice': '냉기', 'thunder': '전격', 'leaf': '대지', 'gem': '심연', 
+            'plasma': '플라즈마', 'mystic': '신비', 'shadow': '그림자',
+            'tablet': '모듈', 'artifact': '아티팩트' // 석판 -> 모듈 명칭 변경
         };
 
         const ATTACK_TYPE_MAP = {
@@ -153,11 +205,37 @@ export class UIManager {
             tablet: '버프'
         };
 
-        ITEMS.filter(item => {
-            return this.activeTag === '전체' || [TAG_MAP[item.element], TAG_MAP[item.type]].filter(Boolean).includes(this.activeTag);
-        }).forEach(item => {
+        // Filter Logic
+        const filteredItems = ITEMS.filter(item => {
+            // 1. Tab Filter
+            if (this.activeTab === 'artifact' && item.type !== 'artifact') return false;
+            if (this.activeTab === 'module' && item.type !== 'tablet') return false;
+
+            // 2. Tag Filter
+            if (this.activeTag === '전체') return true;
+
+            // Check Element or Type match
+            const elTag = TAG_MAP[item.element];
+            const typeTag = TAG_MAP[item.type];
+            
+            // Check Buff Type for Modules
+            let buffTag = null;
+            if (item.type === 'tablet' && item.buff) {
+                if (item.buff.type === 'atk') buffTag = '공격';
+                if (item.buff.type === 'range') buffTag = '범위';
+                // Add more mapping if needed
+            }
+
+            return [elTag, typeTag, buffTag].filter(Boolean).includes(this.activeTag);
+        });
+
+        filteredItems.forEach(item => {
+            const cost = item.type === 'tablet' ? GAME_CONFIG.COSTS.TABLET : GAME_CONFIG.COSTS.ARTIFACT;
+            const canAfford = this.scene.gold >= cost;
+
             const div = document.createElement('div');
-            div.className = 'shop-item';
+            div.className = `shop-item ${canAfford ? '' : 'disabled'}`;
+            if (!canAfford) div.style.opacity = '0.5';
 
             // Generate shape preview
             let shapeHtml = '<div style="display:grid; gap:2px; justify-content:center; align-items:center;">';
@@ -181,7 +259,7 @@ export class UIManager {
                     <div class="shop-item-name">${item.name}</div>
                     <div class="shop-item-meta">
                         <span class="shop-item-type">${TAG_MAP[item.element] || '기본'}</span>
-                        <span class="shop-item-attack-type">${ATTACK_TYPE_MAP[item.stats?.attackType || item.type] || '특수형'}</span>
+                        <span class="shop-item-cost" style="color: ${canAfford ? '#ffd700' : '#ff4444'}">💰 ${cost}</span>
                     </div>
                 </div>
             `;
@@ -189,23 +267,15 @@ export class UIManager {
             div.onmousemove = (e) => this.showTooltip(e, item);
             div.onmouseleave = () => this.hideTooltip();
             div.onclick = () => {
+                if (!canAfford) return;
+                
                 // Auto-placement logic
-                const template = ITEMS.find(i => i.id === item.id);
-                // We need to check size from template to find slot
-                // We can just use the item object here since it matches structure roughly (or pass id)
-
-                // Need access to GridSystem's findEmptySlot. 
-                // GridSystem is attached to Scene.
                 if (this.scene.gridSystem) {
-                    const pos = this.scene.gridSystem.findEmptySlot(item);
-                    if (pos) {
-                        this.scene.gridSystem.createItem(item.id, pos.x, pos.y);
+                    const placed = this.scene.gridSystem.autoPlaceItem(item.id);
+                    if (placed) {
+                        this.scene.spendGold(cost);
                     } else {
-                        // Feedback for full grid?
-                        console.log('Grid is full!');
-                        const originalColor = div.style.backgroundColor;
-                        div.style.backgroundColor = '#ef4444';
-                        setTimeout(() => div.style.backgroundColor = '', 200);
+                        // Feedback for full inventory?
                     }
                 }
             };
@@ -246,7 +316,9 @@ export class UIManager {
             <div class="tooltip-header" style="--rarity-color: ${rarityColor};">
                 <div class="tooltip-name">${item.name}</div>
             </div>
-            <div class="tooltip-desc">${dynamicContent}</div>
+            <div class="tooltip-body">
+                <div class="tooltip-desc">${dynamicContent}</div>
+            </div>
         `;
 
         this.updateTooltipPos(e);
@@ -285,81 +357,108 @@ export class UIManager {
     }
 
     getDynamicDesc(item) {
+        // --- 1. 모듈 (Tablet) 처리 ---
         if (item.type === 'tablet') {
-            const buffText = item.buff ? `🛡️ 인접 공격력 +${item.buff.val}%` : `[기초 시설]`;
-            const color = item.buff ? '#4ade80' : '#94a3b8';
+            let buffText = '';
+            let color = '#94a3b8';
+            
+            if (item.buff) {
+                if (item.buff.type === 'atk') {
+                    buffText = `⚔️ 인접 공격력 +${item.buff.val}%`;
+                    color = '#f87171'; // Red
+                } else if (item.buff.type === 'range') {
+                    buffText = `🎯 인접 사거리 +${item.buff.val}%`;
+                    color = '#38bdf8'; // Blue
+                } else if (item.buff.type === 'focus') {
+                    buffText = `🔥 공격력 +${item.buff.val}% / 📉 사거리 -${item.buff.penalty}%`;
+                    color = '#fbbf24'; // Amber
+                }
+            } else {
+                buffText = `[기초 시설]`;
+            }
+
             return `
-                <div style="color:${color}; font-weight:bold; margin-bottom:8px; font-size: 0.95rem;">${buffText}</div>
-                <div style="font-size:0.85rem; color:#94a3b8; line-height:1.4;">${item.baseDesc || item.desc || ""}</div>
+                <div style="color:${color}; font-weight:bold; margin-bottom:12px; font-size: 0.95rem;">${buffText}</div>
+                <div style="font-size:0.9rem; color:#ccc; line-height:1.5;">${item.baseDesc || item.desc || ""}</div>
             `;
         }
 
+        // --- 2. 아티팩트 (Artifact) 처리 ---
         const stats = item.stats || {};
         let atk = item.currentAtk || stats.atk || 0;
         let range = item.range || stats.range || COMBAT_CONFIG.DEFAULT_RANGE;
         let fr = item.currentFireRate || stats.fireRate || COMBAT_CONFIG.DEFAULT_FIRE_RATE;
 
-        // DPS Calculation
-        const dps = Math.round(atk * (1000 / (fr || 1000)));
+        // DPS Calculation (소수점 1자리까지 표시)
+        const dps = (atk * (1000 / (fr || 1000))).toFixed(1);
 
+        // 새로운 툴팁 스타일 적용 (Grid Layout)
         let html = `
-            <div class="tt-stats">
-                <div class="tt-stat">
-                    <span class="tt-stat-label">DPS (초당 피해)</span>
-                    <span class="tt-stat-val" style="color:#fbbf24">${Math.round(dps)}</span>
+            <div class="tooltip-stats">
+                <div class="stat-row">
+                    <span>공격력</span>
+                    <span>${Math.round(atk)}</span>
                 </div>
-                <div class="tt-stat">
-                    <span class="tt-stat-label">사거리 (Range)</span>
-                    <span class="tt-stat-val" style="color:#38bdf8">${Math.round(range)}</span>
+                <div class="stat-row">
+                    <span>공격 속도</span>
+                    <span>${(1000 / fr).toFixed(2)}/s</span>
+                </div>
+                <div class="stat-row">
+                    <span>DPS</span>
+                    <span style="color:#fbbf24">${dps}</span>
+                </div>
+                <div class="stat-row">
+                    <span>사거리</span>
+                    <span style="color:#38bdf8">${Math.round(range)}</span>
                 </div>
             </div>
         `;
 
+        // 추가 스탯 (특수 능력)
         let extraStats = [];
-
-        // Special Stats
         if (stats.attackType === 'rapid') {
             const reload = (stats.reloadTime || 0) / 1000;
-            extraStats.push(`<div>🔄 장전: <span style="color:#fff;">${reload.toFixed(1)}s</span> <span style="opacity:0.7">(${stats.burstCount}연사)</span></div>`);
+            extraStats.push(`<div class="stat-row"><span>장전 속도</span><span>${reload.toFixed(1)}초</span></div>`);
+            extraStats.push(`<div class="stat-row"><span>연사 횟수</span><span>${stats.burstCount}발</span></div>`);
         }
         if (stats.attackType === 'chain') {
-            extraStats.push(`<div>🔗 연쇄 공격: <span style="color:#a78bfa;">${stats.chainCount}명</span></div>`);
+            extraStats.push(`<div class="stat-row"><span style="color:#a78bfa">연쇄 타격</span><span>${stats.chainCount}명</span></div>`);
         }
         if (stats.attackType === 'multi') {
-            extraStats.push(`<div>✨ 동시 발사: <span style="color:#f472b6;">${stats.projectileCount}발</span></div>`);
+            extraStats.push(`<div class="stat-row"><span style="color:#f472b6">동시 발사</span><span>${stats.projectileCount}발</span></div>`);
         }
-        if (stats.aoeRadius) {
-            extraStats.push(`<div>💥 폭발 범위: <span style="color:#f87171;">${Math.round(stats.aoeRadius)}px</span></div>`);
+        if (stats.aoeRadius || stats.attackType === 'nova' || stats.attackType === 'bomb') {
+            const rad = stats.aoeRadius || (stats.attackType === 'nova' ? COMBAT_CONFIG.NOVA_RADIUS : COMBAT_CONFIG.BOMB_RADIUS);
+            extraStats.push(`<div class="stat-row"><span style="color:#f87171">폭발 범위</span><span>${Math.round(rad)}px</span></div>`);
+        }
+        if (stats.debuff) {
+             const typeMap = { 'slow': '둔화', 'stun': '기절', 'poison': '중독', 'vulnerable': '약화' };
+             const valStr = stats.debuff.val ? `${stats.debuff.val}` : '';
+             const durStr = (stats.debuff.duration / 1000).toFixed(1) + 's';
+             extraStats.push(`<div class="stat-row"><span style="color:#4ade80">${typeMap[stats.debuff.type]}</span><span>${valStr} (${durStr})</span></div>`);
         }
 
         if (extraStats.length > 0) {
-            html += `<div style="font-size:0.85em; display:flex; flex-direction:column; gap:4px; margin-bottom:8px;">${extraStats.join('')}</div>`;
+            html += `<div class="tooltip-stats" style="margin-top:8px; border-top:1px solid #333; padding-top:8px;">${extraStats.join('')}</div>`;
         }
 
         // Active Synergy
         if (item.activeSynergy) {
             const synColors = {
-                fire: '#ff5555',
-                ice: '#33ddff',
-                thunder: '#ffeb3b',
-                leaf: '#4caf50',
-                gem: '#e040fb'
+                fire: '#ff5555', ice: '#33ddff', thunder: '#ffeb3b', leaf: '#4caf50', 
+                gem: '#e040fb', shadow: '#7c3aed', plasma: '#e879f9', mystic: '#6366f1'
             };
             const sColor = synColors[item.element] || '#ffffff';
-            html += `<div class="tt-divider"></div>`;
-            html += `<div style="color:${sColor}; font-weight:bold; margin-bottom:4px; font-size:0.9rem;">✨ ${item.activeSynergy} 발동!</div>`;
+            html += `<div style="margin-top:12px; color:${sColor}; font-weight:bold; font-size:0.9rem; text-shadow:0 0 5px ${sColor}44;">✨ ${item.activeSynergy} 활성화</div>`;
         }
 
-        // Description
+        // Description & Flavor
         const desc = item.baseDesc || item.desc || "";
         if (desc) {
-            html += `<div class="tt-divider"></div>`;
-            html += `<div style="color:#ccc; font-size:0.85em; font-style: italic;">${desc}</div>`;
+            html += `<div class="tooltip-desc" style="margin-top:12px;">${desc}</div>`;
         }
-
-        // Flavor Text
         if (item.flavor) {
-            html += `<div style="margin-top:8px; color:#64748b; font-size:0.8em;">${item.flavor}</div>`;
+            html += `<div class="tooltip-flavor">${item.flavor}</div>`;
         }
 
         return html;

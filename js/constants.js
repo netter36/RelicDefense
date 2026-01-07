@@ -82,6 +82,17 @@ export const DIFFICULTY_CONFIG = {
     GAME_MINUTE_MS: 60000
 };
 
+export const GAME_CONFIG = {
+    INITIAL_GOLD: 999999,
+    INITIAL_LIVES: 20, // Deprecated but kept for compatibility if needed
+    MAX_MONSTERS: 150, // Game Over if exceeded (기존 50 -> 150 상향)
+    MONSTER_REWARD: 10,
+    COSTS: {
+        TABLET: 50,
+        ARTIFACT: 150
+    }
+};
+
 // UI 및 시각 효과 설정 (UI & Visual Configuration)
 export const UI_CONFIG = {
     GRID_LINE_ALPHA: 0.2,

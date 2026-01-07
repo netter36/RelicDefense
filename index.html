@@ -15,7 +15,7 @@
 <body>
     <div class="game-container">
         <header class="game-header">
-            <h1 class="pixel-text">SEPHIRIA INVENTORY</h1>
+            <h1 class="pixel-text">PROJECT : DEFENCE</h1>
         </header>
 
         <main class="game-main">
@@ -32,6 +32,11 @@
                     <div class="panel-header">정보</div>
                     <div class="stats-grid">
                         <div class="stat-card">
+                            <div class="stat-label">골드</div>
+                            <div id="stat-gold" class="stat-value" style="color:#ffd700">0</div>
+                        </div>
+                        <!-- Lives removed, replaced by Monster Limit logic -->
+                        <div class="stat-card">
                             <div class="stat-label">공격력</div>
                             <div id="stat-atk" class="stat-value">0</div>
                         </div>
@@ -43,9 +48,9 @@
                             <div class="stat-label">배치 유물</div>
                             <div id="stat-artifacts" class="stat-value">0</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-label">몬스터</div>
-                            <div id="monster-count" class="stat-value monster-value">0</div>
+                        <div class="stat-card" style="grid-column: span 2;">
+                            <div class="stat-label">몬스터 (게임 오버까지)</div>
+                            <div id="monster-count" class="stat-value monster-value">0 / 150</div>
                         </div>
                     </div>
 
@@ -75,12 +80,16 @@
             <!-- Right Sidebar: Item Creation -->
             <aside class="sidebar side-right">
                 <div class="item-editor" style="height: 100%;">
-                    <div class="panel-header">아이템 생성</div>
+                    <div class="panel-header">상점</div>
 
+                    <!-- Tabs Container -->
+                    <div id="shop-tabs" class="shop-tabs">
+                        <!-- Tabs injected by JS or static -->
+                        <button class="shop-tab-btn active" data-tab="artifact">아티팩트</button>
+                        <button class="shop-tab-btn" data-tab="module">모듈</button>
+                    </div>
 
-
-                    <div id="shop-tags" class="tag-container"
-                        style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div id="shop-tags" class="tag-container">
                         <!-- Tag pills injected here -->
                     </div>
 
