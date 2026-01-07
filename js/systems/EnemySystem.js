@@ -39,6 +39,7 @@ export class EnemySystem {
         m.hpBar = this.scene.add.graphics().setDepth(21);
         m.hpBarWidth = size;
         m.debuffs = []; // Initialize debuffs
+        m.isStatusDirty = true; // Initial status draw
 
         this.updateHPBar(m);
         this.monsters.add(m);
@@ -69,6 +70,33 @@ export class EnemySystem {
             if (r <= 0) return t;
         }
         return MONSTER_TYPES[0];
+    }
+
+    applyKnockback(m, sourceX, sourceY, forcePixels) {
+        if (!m.active || !this.path) return;
+
+        // Calculate direction along the path?
+        // Actually, we just want to push them BACKWARDS along their path progress (t).
+        // To do this accurately, we need the total path length.
+        const totalLength = this.path.getLength();
+        const deltaT = forcePixels / totalLength;
+
+        // Apply knockback
+        m.t = Math.max(0, m.t - deltaT);
+
+        // Update position immediately
+        const p = this.path.getPoint(m.t);
+        m.setPosition(p.x, p.y);
+        if (m.hpBar) m.hpBar.setPosition(m.x, m.y - 30);
+        
+        // Visual feedback for knockback
+        this.scene.tweens.add({
+            targets: m,
+            alpha: 0.5,
+            duration: 100,
+            yoyo: true,
+            repeat: 1
+        });
     }
 
     update(delta) {
@@ -120,7 +148,10 @@ export class EnemySystem {
                     }
                 }
 
-                if (d.duration <= 0) m.debuffs.splice(i, 1);
+                if (d.duration <= 0) {
+                    m.debuffs.splice(i, 1);
+                    m.isStatusDirty = true; // Status changed
+                }
             }
 
             if (m.hp <= 0) {
@@ -140,47 +171,51 @@ export class EnemySystem {
             m.setPosition(p.x, p.y);
             if (m.hpBar) {
                 m.hpBar.setPosition(m.x, m.y - 30);
-                this.updateHPBar(m);
+                // this.updateHPBar(m); // [Optimization] Removed redundant redraw every frame
             }
 
-            // Status Visuals
-            if (!m.statusG) {
-                m.statusG = this.scene.add.graphics();
-                m.add(m.statusG);
-            }
-            m.statusG.clear();
-            const size = m.hpBarWidth || 40;
+            // Status Visuals - [Optimization] Only redraw when dirty
+            if (m.isStatusDirty) {
+                if (!m.statusG) {
+                    m.statusG = this.scene.add.graphics();
+                    m.add(m.statusG);
+                }
+                m.statusG.clear();
+                const size = m.hpBarWidth || 40;
 
-            if (isStunned) {
-                // Stun: Yellow Stroke & Icon
-                m.statusG.lineStyle(2, 0xffff00, 1);
-                m.statusG.strokeCircle(0, 0, size / 2 + 2);
-                // Simple bolt shape
-                m.statusG.fillStyle(0xffff00, 1);
-                m.statusG.beginPath();
-                m.statusG.moveTo(0, -size / 2 - 10);
-                m.statusG.lineTo(3, -size / 2 - 5);
-                m.statusG.lineTo(-3, -size / 2 - 5);
-                m.statusG.closePath();
-                m.statusG.fillPath();
-            }
-            else if (m.debuffs.some(d => d.type === 'poison')) {
-                // Poison: Green Bubbles overlay
-                m.statusG.fillStyle(0x4ade80, 0.3);
-                m.statusG.fillCircle(0, 0, size / 2);
-                m.statusG.fillStyle(0x4ade80, 0.8);
-                m.statusG.fillCircle(size / 2, -size / 2, 3);
-            }
-            else if (m.debuffs.some(d => d.type === 'vulnerable')) {
-                // Vulnerable: Purple Brackets/Rect/Cracks
-                m.statusG.lineStyle(2, 0xa855f7, 0.8);
-                const s = size / 2;
-                m.statusG.strokeRect(-s - 2, -s - 2, size + 4, size + 4);
-            }
-            else if (speedMult < 1) {
-                // Slow: Blue Aura
-                m.statusG.fillStyle(0x3b82f6, 0.2);
-                m.statusG.fillCircle(0, 0, size / 2 + 6);
+                if (isStunned) {
+                    // Stun: Yellow Stroke & Icon
+                    m.statusG.lineStyle(2, 0xffff00, 1);
+                    m.statusG.strokeCircle(0, 0, size / 2 + 2);
+                    // Simple bolt shape
+                    m.statusG.fillStyle(0xffff00, 1);
+                    m.statusG.beginPath();
+                    m.statusG.moveTo(0, -size / 2 - 10);
+                    m.statusG.lineTo(3, -size / 2 - 5);
+                    m.statusG.lineTo(-3, -size / 2 - 5);
+                    m.statusG.closePath();
+                    m.statusG.fillPath();
+                }
+                else if (m.debuffs.some(d => d.type === 'poison')) {
+                    // Poison: Green Bubbles overlay
+                    m.statusG.fillStyle(0x4ade80, 0.3);
+                    m.statusG.fillCircle(0, 0, size / 2);
+                    m.statusG.fillStyle(0x4ade80, 0.8);
+                    m.statusG.fillCircle(size / 2, -size / 2, 3);
+                }
+                else if (m.debuffs.some(d => d.type === 'vulnerable')) {
+                    // Vulnerable: Purple Brackets/Rect/Cracks
+                    m.statusG.lineStyle(2, 0xa855f7, 0.8);
+                    const s = size / 2;
+                    m.statusG.strokeRect(-s - 2, -s - 2, size + 4, size + 4);
+                }
+                else if (speedMult < 1) {
+                    // Slow: Blue Aura
+                    m.statusG.fillStyle(0x3b82f6, 0.2);
+                    m.statusG.fillCircle(0, 0, size / 2 + 6);
+                }
+                
+                m.isStatusDirty = false;
             }
         });
     }

@@ -36,9 +36,9 @@ export default class MainScene extends Phaser.Scene {
         // this.time.addEvent({ ... });
 
         // Build starting item
-        this.time.delayedCall(100, () => {
-            // no item
-        });
+        // FPS Counter
+        this.fpsElem = document.getElementById('fps-counter');
+        this.fpsUpdateTimer = 0;
     }
 
     initPath() {
@@ -63,6 +63,14 @@ export default class MainScene extends Phaser.Scene {
     update(time, delta) {
         if (this.isGameOver) return;
         this.gameTimer += delta;
+        
+        // FPS Update (every 200ms)
+        this.fpsUpdateTimer += delta;
+        if (this.fpsUpdateTimer > 200 && this.fpsElem) {
+            this.fpsElem.innerText = `FPS: ${Math.round(this.game.loop.actualFps)}`;
+            this.fpsUpdateTimer = 0;
+        }
+
         if (this.enemySystem) this.enemySystem.update(delta);
         if (this.towerSystem) this.towerSystem.update(this.gameTimer, this.gridSystem.placedItems);
     }

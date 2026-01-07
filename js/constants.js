@@ -5,14 +5,21 @@ export const CANVAS_WIDTH = 650;
 export const CANVAS_HEIGHT = 650;
 
 export const SYNERGIES = [
-    { id: 'fire_power', name: '화염의 시너지', element: 'fire', req: 2, desc: '공격력 +20% (최종 피해량 증가)' },
-    { id: 'ice_freeze', name: '혹한의 시너지', element: 'ice', req: 2, desc: '둔화 효율 +25% (적 이동속도 감소)' },
-    { id: 'thunder_rapid', name: '전격의 시너지', element: 'thunder', req: 2, desc: '연사 속도 +30% (공격 주기 단축)' },
-    { id: 'leaf_regen', name: '생명의 시너지', element: 'leaf', req: 2, desc: '공격 범위 +15% (사거리 증가)' },
-    { id: 'gem_legend', name: '보석의 시너지', element: 'gem', req: 2, desc: '치명타 확률 +10% (기본 피해의 2배)' },
-    { id: 'shadow_curse', name: '그림자의 시너지', element: 'shadow', req: 2, desc: '처형 (체력 30% 이하 적에게 2배 피해)' },
-    { id: 'plasma_boom', name: '플라즈마의 시너지', element: 'plasma', req: 2, desc: '폭발 범위 +50% (광역 공격 효율 증가)' },
-    { id: 'mystic_pierce', name: '신비의 시너지', element: 'mystic', req: 2, desc: '관통 +1 (적을 뚫고 뒤의 적 타격)' }
+    // --- Elemental Synergies ---
+    { id: 'fire_power', name: '화염의 시너지', type: 'element', key: 'fire', req: 2, desc: '공격력 +20%' },
+    { id: 'ice_freeze', name: '혹한의 시너지', type: 'element', key: 'ice', req: 2, desc: '둔화 효율 +25%' },
+    { id: 'thunder_rapid', name: '전격의 시너지', type: 'element', key: 'thunder', req: 2, desc: '연사 속도 +30%' },
+    { id: 'leaf_regen', name: '생명의 시너지', type: 'element', key: 'leaf', req: 2, desc: '사거리 +15%' },
+    { id: 'gem_legend', name: '보석의 시너지', type: 'element', key: 'gem', req: 2, desc: '치명타 확률 +10%' },
+    { id: 'shadow_curse', name: '그림자의 시너지', type: 'element', key: 'shadow', req: 2, desc: '처형 (30% 이하)' },
+    { id: 'plasma_boom', name: '플라즈마 시너지', type: 'element', key: 'plasma', req: 2, desc: '폭발 범위 +50%' },
+    { id: 'mystic_pierce', name: '신비의 시너지', type: 'element', key: 'mystic', req: 2, desc: '관통 +1' },
+
+    // --- Role (Class) Synergies ---
+    { id: 'role_sniper', name: '저격수', type: 'role', key: 'sniper', req: 2, desc: '사거리 +100 & 치명타 +10%' },
+    { id: 'role_artillery', name: '포격대', type: 'role', key: 'artillery', req: 2, desc: '폭발 범위 +30%' },
+    { id: 'role_assault', name: '돌격대', type: 'role', key: 'assault', req: 2, desc: '공격 속도 +20%' },
+    { id: 'role_support', name: '지원가', type: 'role', key: 'support', req: 2, desc: '디버프 지속시간 +50%' }
 ];
 
 export const ATTACK_TYPES = {

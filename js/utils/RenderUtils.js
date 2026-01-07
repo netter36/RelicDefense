@@ -137,16 +137,11 @@ export class RenderUtils {
                 g.fillTriangle(x, y - sz*0.5, x - sz*0.3, y + sz*0.5, x + sz*0.3, y + sz*0.5);
             }
             else if (type === 'ice') {
-                // Hex Crystal
-                const r = sz;
-                g.beginPath();
-                for (let i = 0; i < 6; i++) {
-                    const angle = i * Math.PI / 3;
-                    g.lineTo(x + Math.cos(angle) * r, y + Math.sin(angle) * r);
-                }
-                g.closePath();
-                g.fillPath();
-                g.strokePath();
+                // Hex Crystal using Phaser.Geom.Circle to generate points
+                const circle = new Phaser.Geom.Circle(x, y, sz);
+                const points = circle.getPoints(6);
+                g.fillPoints(points, true);
+                g.strokePoints(points, true);
             }
             else if (type === 'thunder') {
                 // Jagged Bolt
@@ -209,31 +204,87 @@ export class RenderUtils {
         };
 
         if (data.type === 'tablet') {
-            // Tech Module
-            g.fillStyle(0x3f3f46, 1); // Zinc-700
-            g.fillRoundedRect(-w/2 + 6, -h/2 + 6, w - 12, h - 12, 4);
+            // Futuristic Module Design
+            // Base plate with metallic finish
+            g.fillStyle(0x18181b, 1); // Dark Zinc
+            g.fillRoundedRect(-w/2 + 4, -h/2 + 4, w - 8, h - 8, 6);
             
-            // Circuitry lines
-            g.lineStyle(2, 0x52525b, 1);
-            g.strokeRect(-w/2 + 10, -h/2 + 10, w - 20, h - 20);
-            g.lineBetween(-w/2 + 10, 0, -w/2 + 20, 0);
-            g.lineBetween(w/2 - 10, 0, w/2 - 20, 0);
+            // Inner recessed panel
+            g.fillStyle(0x09090b, 1); // Blacker
+            g.fillRoundedRect(-w/2 + 8, -h/2 + 8, w - 16, h - 16, 4);
 
-            // Holographic Status
+            // Tech Corners
+            g.fillStyle(0x52525b, 1);
+            const cs = 6; // Corner size
+            g.fillRect(-w/2 + 4, -h/2 + 4, cs, 2);
+            g.fillRect(-w/2 + 4, -h/2 + 4, 2, cs);
+            g.fillRect(w/2 - 4 - cs, -h/2 + 4, cs, 2);
+            g.fillRect(w/2 - 6, -h/2 + 4, 2, cs);
+            g.fillRect(-w/2 + 4, h/2 - 6, cs, 2);
+            g.fillRect(-w/2 + 4, h/2 - 4 - cs, 2, cs);
+            g.fillRect(w/2 - 4 - cs, h/2 - 6, cs, 2);
+            g.fillRect(w/2 - 6, h/2 - 4 - cs, 2, cs);
+
+            // Determine Buff Color & Icon
             const buffType = data.buff ? data.buff.type : 'atk';
-            const buffColor = buffType === 'atk' ? 0xff4444 : (buffType === 'range' ? 0x44ff44 : 0x4444ff);
+            let buffColor = 0xffffff;
+            if (buffType === 'atk') buffColor = 0xff4444;      // Red
+            else if (buffType === 'range') buffColor = 0x44ff44; // Green
+            else if (buffType === 'speed') buffColor = 0x3b82f6; // Blue
+            else if (buffType === 'crit') buffColor = 0xfacc15;  // Yellow
+            else if (buffType === 'area') buffColor = 0xa855f7;  // Purple
+
+            // Central Core (Glowing)
+            g.fillStyle(buffColor, 0.2);
+            g.fillCircle(0, 0, 14);
+            g.lineStyle(2, buffColor, 0.8);
+            g.strokeCircle(0, 0, 14);
             
-            g.lineStyle(2, buffColor, 1);
-            g.strokeCircle(0, 0, 10);
-            
+            // Rotating outer ring segments (static drawing)
+            g.lineStyle(2, buffColor, 0.4);
+            g.beginPath();
+            g.arc(0, 0, 18, 0, Math.PI/2);
+            g.strokePath();
+            g.beginPath();
+            g.arc(0, 0, 18, Math.PI, Math.PI * 1.5);
+            g.strokePath();
+
+            // Icon Symbol
+            g.lineStyle(2, 0xffffff, 1);
             if (buffType === 'atk') {
-                g.lineBetween(-6, -6, 6, 6);
-                g.lineBetween(6, -6, -6, 6);
+                // Sword / Dagger
+                g.lineBetween(-6, 6, 6, -6);
+                g.lineBetween(-2, 6, 6, -2);
             } else if (buffType === 'range') {
+                // Radar / Target
                 g.strokeCircle(0, 0, 4);
-                g.lineBetween(-8, 0, 8, 0);
-                g.lineBetween(0, -8, 0, 8);
+                g.lineBetween(-8, 0, -4, 0);
+                g.lineBetween(4, 0, 8, 0);
+                g.lineBetween(0, -8, 0, -4);
+                g.lineBetween(0, 4, 0, 8);
+            } else if (buffType === 'speed') {
+                // Lightning / Fast forward
+                g.beginPath();
+                g.moveTo(2, -6);
+                g.lineTo(-4, 0);
+                g.lineTo(0, 0);
+                g.lineTo(-2, 6);
+                g.lineTo(4, 0);
+                g.lineTo(0, 0);
+                g.closePath();
+                g.strokePath();
+            } else if (buffType === 'crit') {
+                // Star / Spark
+                g.lineBetween(0, -7, 0, 7);
+                g.lineBetween(-7, 0, 7, 0);
+                g.lineBetween(-5, -5, 5, 5);
+                g.lineBetween(-5, 5, 5, -5);
+            } else if (buffType === 'area') {
+                // Explosion / Expanding
+                g.strokeCircle(0, 0, 3);
+                g.strokeCircle(0, 0, 7);
             }
+
             return;
         }
 
@@ -473,21 +524,14 @@ export class RenderUtils {
             const s = size * 0.8;
             g.fillStyle(0x333333, 1); // Dark Hull
             
-            // Draw Hexagon manually
-            g.beginPath();
-            for(let i=0; i<6; i++) {
-                const angle = i * Math.PI / 3;
-                const x = Math.cos(angle) * s;
-                const y = Math.sin(angle) * s;
-                if(i===0) g.moveTo(x, y);
-                else g.lineTo(x, y);
-            }
-            g.closePath();
-            g.fillPath();
+            // Draw Hexagon using Phaser.Geom.Circle points
+            const circle = new Phaser.Geom.Circle(0, 0, s);
+            const points = circle.getPoints(6);
+            g.fillPoints(points, true);
 
             // Armor plates
             g.lineStyle(3, color, 1);
-            g.strokePath();
+            g.strokePoints(points, true);
 
             // Core Shield
             g.fillStyle(0xfacc15, 1);
@@ -540,58 +584,260 @@ export class RenderUtils {
         }
     }
 
-    static createHitEffect(scene, x, y, element) {
-        const colors = ELEMENT_COLORS;
-        const color = colors[element] || 0xffffff;
+    static showHitEffect(scene, x, y, color) {
+        // Handle color if passed as element string or number
+        let finalColor = color;
+        if (typeof color === 'string') {
+             finalColor = ELEMENT_COLORS[color] || 0xffffff;
+        } else if (color === undefined) {
+             finalColor = 0xffffff;
+        }
 
         const g = scene.add.graphics();
-        g.setDepth(28);
+        g.setDepth(120); // Above projectiles(100)
         g.setBlendMode(Phaser.BlendModes.ADD);
 
-        // Core Flash
+        // Core Flash (Static)
         g.fillStyle(0xffffff, 1);
-        g.fillCircle(x, y, 5);
-        g.fillStyle(color, 0.6);
-        g.fillCircle(x, y, 12);
+        g.fillCircle(0, 0, 5); // Draw at relative 0,0
+        g.fillStyle(finalColor, 0.6);
+        g.fillCircle(0, 0, 12);
+
+        // Spark particles (simple lines radiating from center)
+        for(let i=0; i<4; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const len = 10 + Math.random() * 10;
+            g.lineStyle(2, finalColor, 0.8);
+            g.lineBetween(0, 0, Math.cos(angle)*len, Math.sin(angle)*len);
+        }
+        
+        g.x = x;
+        g.y = y;
 
         scene.tweens.add({
             targets: g,
             alpha: 0,
+            scaleX: 0.5,
+            scaleY: 0.5,
             duration: 200,
             onComplete: () => g.destroy()
         });
     }
 
-    static createProjectile(scene, x, y, element) {
-        const proj = scene.add.graphics();
-        proj.x = x;
-        proj.y = y;
-        // 1. 블럭에 가려지지 않도록 깊이(Depth) 상향 (기존 25 -> 100)
-        proj.setDepth(100); 
-        proj.setBlendMode(Phaser.BlendModes.ADD);
-        scene.physics.add.existing(proj);
+    static getProjectileColor(item) {
+        if (!item) return 0xffffff;
+        // If it has a specific active synergy color override, we could check that too.
+        // For now, map element to color.
+        const map = {
+            fire: 0xff5500,    // Bright Orange
+            ice: 0x33ddff,     // Cyan
+            thunder: 0xffff00, // Yellow
+            leaf: 0x4ade80,    // Green
+            gem: 0xd8b4fe,     // Purple
+            shadow: 0x7c3aed,  // Dark Purple
+            plasma: 0xe879f9,  // Pink
+            mystic: 0x6366f1,  // Indigo
+        };
+        return map[item.element] || 0xffffff;
+    }
 
-        const color = ELEMENT_COLORS[element] || 0xffffff;
+    static createProjectile(scene, x, y, target, item) {
+        const color = this.getProjectileColor(item);
         
-        // 2. 더 화려한 투사체 이펙트
-        // Outer Glow
-        proj.fillStyle(color, 0.4);
-        proj.fillCircle(0, 0, 10);
+        const g = scene.add.graphics();
+        g.setDepth(100); // Ensure projectiles are above everything
         
-        // Core Glow
-        proj.fillStyle(color, 0.8);
-        proj.fillCircle(0, 0, 6);
-        
-        // Center Hotspot
-        proj.fillStyle(0xffffff, 1);
-        proj.fillCircle(0, 0, 3);
-        
-        // Trail effect (simple tween rotation)
-        scene.tweens.add({ targets: proj, angle: 360, duration: 200, repeat: -1 });
+        // 1. Outer Glow (Large, Soft)
+        g.fillStyle(color, 0.4);
+        g.fillCircle(0, 0, 10);
 
-        // Add particles for trail if possible (simple rects)
-        // ... (Skipping complex particles for performance, but glow is enhanced)
+        // 2. Core Glow (Medium, Bright)
+        g.fillStyle(color, 0.8);
+        g.fillCircle(0, 0, 6);
 
-        return proj;
+        // 3. Center Hotspot (White, Intense)
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(0, 0, 3);
+        
+        // Add blend mode for light effect
+        g.setBlendMode(Phaser.BlendModes.ADD);
+
+        g.x = x;
+        g.y = y;
+
+        // Spin animation for dynamic feel
+        scene.tweens.add({
+            targets: g,
+            angle: 360,
+            duration: 500,
+            repeat: -1
+        });
+
+        return g;
+    }
+
+    static createArrowRain(scene, x, y, color = 0x4ade80, onImpact) {
+        // Create multiple arrows falling
+        const count = 5;
+        let impactTriggered = false;
+
+        for (let i = 0; i < count; i++) {
+            const arrow = scene.add.graphics();
+            arrow.setDepth(150);
+            arrow.setBlendMode(Phaser.BlendModes.ADD);
+
+            // Arrow shape
+            arrow.fillStyle(color, 1);
+            arrow.beginPath();
+            arrow.moveTo(0, 20);       // Tip (Pointing Down)
+            arrow.lineTo(-3, 0);    // Left back
+            arrow.lineTo(0, 5);     // Shaft center
+            arrow.lineTo(3, 0);     // Right back
+            arrow.closePath();
+            arrow.fillPath();
+
+            // Trail (Above the arrow)
+            arrow.lineStyle(1, color, 0.5);
+            arrow.lineBetween(0, 0, 0, -20);
+
+            // Randomize start position slightly above target
+            const offsetX = (Math.random() - 0.5) * 40;
+            const offsetY = (Math.random() - 0.5) * 20;
+            const startY = y - 300 - Math.random() * 100;
+            
+            arrow.x = x + offsetX;
+            arrow.y = startY;
+            
+            // Fall animation
+            const duration = 200 + Math.random() * 100;
+            scene.tweens.add({
+                targets: arrow,
+                y: y + offsetY,
+                duration: duration,
+                ease: 'Linear',
+                onComplete: () => {
+                    // Trigger damage callback only once per volley (or per arrow if needed, but usually once is safer for balance)
+                    if (!impactTriggered && onImpact) {
+                        impactTriggered = true;
+                        onImpact();
+                    }
+
+                    // Impact effect
+                    const impact = scene.add.graphics();
+                    impact.setDepth(149);
+                    impact.x = arrow.x;
+                    impact.y = arrow.y;
+                    impact.fillStyle(color, 0.8);
+                    impact.fillCircle(0, 0, 3);
+                    
+                    scene.tweens.add({
+                        targets: impact,
+                        scaleX: 2,
+                        scaleY: 2,
+                        alpha: 0,
+                        duration: 150,
+                        onComplete: () => impact.destroy()
+                    });
+                    
+                    arrow.destroy();
+                }
+            });
+        }
+    }
+
+    static createSpearStrike(scene, x, y, color = 0xffff00) {
+        // 1. The Spear (Diagonal Beam)
+        const spear = scene.add.graphics();
+        spear.setDepth(150);
+        spear.setBlendMode(Phaser.BlendModes.ADD);
+        
+        // Spear angle: slightly diagonal (e.g., -15 degrees from vertical)
+        // We will rotate the graphics object itself for easier drawing
+        const angleDeg = -15; 
+        const rad = Phaser.Math.DegToRad(angleDeg);
+
+        // Draw Spear Shape (Long vertical spike relative to rotation)
+        spear.fillStyle(color, 1);
+        spear.beginPath();
+        spear.moveTo(-2, -600); // Start high up
+        spear.lineTo(2, -600);
+        spear.lineTo(4, -50);
+        spear.lineTo(0, 0);     // Tip at target
+        spear.lineTo(-4, -50);
+        spear.closePath();
+        spear.fillPath();
+
+        // Glow around spear
+        spear.lineStyle(10, color, 0.3);
+        spear.lineBetween(0, -600, 0, 0);
+
+        spear.x = x;
+        spear.y = y;
+        spear.rotation = rad; // Apply diagonal rotation
+
+        spear.scaleY = 0; // Start invisible/high
+        spear.alpha = 0;
+
+        // Animation Sequence
+        // 1. Appear & Slam down
+        scene.tweens.add({
+            targets: spear,
+            scaleY: 1,
+            alpha: 1,
+            duration: 150,
+            ease: 'Back.out',
+            onComplete: () => {
+                // 2. Impact Shockwave
+                const wave = scene.add.graphics();
+                wave.setDepth(149);
+                wave.x = x;
+                wave.y = y;
+                // Oval shape for perspective impact
+                wave.scaleY = 0.5; 
+                
+                wave.lineStyle(4, color, 1);
+                wave.strokeCircle(0, 0, 10);
+                
+                scene.tweens.add({
+                    targets: wave,
+                    scaleX: 3,
+                    scaleY: 1.5, // Maintain oval aspect
+                    alpha: 0,
+                    duration: 300,
+                    onComplete: () => wave.destroy()
+                });
+
+                // 3. Fade out spear
+                scene.tweens.add({
+                    targets: spear,
+                    scaleY: 2, // Stretch while fading
+                    alpha: 0,
+                    duration: 200,
+                    onComplete: () => spear.destroy()
+                });
+            }
+        });
+    }
+
+    static showFloatingText(scene, x, y, text, color = '#ffffff') {
+        const txt = scene.add.text(x, y, text, {
+            fontFamily: 'monospace',
+            fontSize: '16px',
+            fontStyle: 'bold',
+            color: color,
+            stroke: '#000000',
+            strokeThickness: 3
+        });
+        txt.setOrigin(0.5);
+        txt.setDepth(200);
+
+        scene.tweens.add({
+            targets: txt,
+            y: y - 40,
+            alpha: 0,
+            duration: 800,
+            ease: 'Power2',
+            onComplete: () => txt.destroy()
+        });
     }
 }

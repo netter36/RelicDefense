@@ -1,11 +1,13 @@
 import { ITEMS } from '../data/items.js';
 import { GRID_WIDTH, GRID_HEIGHT, SLOT_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT, THEME, SYNERGIES, GAME_CONFIG } from '../constants.js';
 import { RenderUtils } from '../utils/RenderUtils.js';
+import { SynergySystem } from './SynergySystem.js';
 
 export class GridSystem {
     constructor(scene, uiManager) {
         this.scene = scene;
         this.uiManager = uiManager;
+        this.synergySystem = new SynergySystem();
         this.grid = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(null));
         this.placedItems = [];
         this.gridStartPos = {
@@ -372,108 +374,10 @@ export class GridSystem {
     }
 
     calculateSynergies() {
-        const { activeCombos } = this._calculateSynergiesLogic(this.placedItems, SLOT_SIZE);
+        const { activeCombos } = this.synergySystem.calculateSynergies(this.placedItems, SLOT_SIZE);
         this.placedItems.forEach(item => { if (item.el) RenderUtils.renderProceduralShape(this.scene, item.el, item); });
         const totalAtk = this.placedItems.reduce((acc, i) => acc + (i.currentAtk || 0), 0);
         this.uiManager.updateHUD({ atk: Math.round(totalAtk), fireBonus: 0, artifacts: 0, combos: activeCombos });
         this.uiManager.renderItems();
-    }
-
-    // Merged logic from synergy.js
-    _calculateSynergiesLogic(placedItems, slotSize) {
-        const activeCombos = [];
-        const visited = new Set();
-
-        placedItems.forEach(i => {
-            i.isSynergetic = false;
-            i.activeSynergy = null;
-            i.currentAtk = i.stats?.atk || 0;
-            i.currentFireRate = i.stats?.fireRate || 1000;
-            i.range = i.stats?.range || 250;
-            i.critChance = 0;
-            i.debuffEfficiency = 1;
-        });
-
-        // Apply Tablet Buffs
-        placedItems.forEach(tablet => {
-            if (tablet.type === 'tablet' && tablet.buff) {
-                placedItems.forEach(target => {
-                    if (target !== tablet && target.type === 'artifact' && this._areAdjacent(tablet, target, slotSize)) {
-                        if (tablet.buff.type === 'atk') {
-                            target.currentAtk *= (1 + tablet.buff.val / 100);
-                        } else if (tablet.buff.type === 'range') {
-                            target.range *= (1 + tablet.buff.val / 100);
-                        } else if (tablet.buff.type === 'focus') {
-                            target.currentAtk *= (1 + tablet.buff.val / 100);
-                            target.range *= (1 - tablet.buff.penalty / 100);
-                        }
-                    }
-                });
-            }
-        });
-
-
-        placedItems.forEach(startItem => {
-            if (visited.has(startItem) || !startItem.element) return;
-
-            const group = [];
-            const queue = [startItem];
-            visited.add(startItem);
-
-            while (queue.length > 0) {
-                const current = queue.shift();
-                group.push(current);
-
-                placedItems.forEach(neighbor => {
-                    if (!visited.has(neighbor) && neighbor.element === startItem.element && this._areAdjacent(current, neighbor, slotSize)) {
-                        visited.add(neighbor);
-                        queue.push(neighbor);
-                    }
-                });
-            }
-
-            const syn = SYNERGIES.find(s => s.element === startItem.element);
-            if (syn && group.length >= syn.req) {
-                if (!activeCombos.includes(syn.name)) activeCombos.push(syn.name);
-                group.forEach(i => {
-                    i.isSynergetic = true;
-                    i.activeSynergy = syn.name;
-                    if (syn.id === 'fire_power') i.currentAtk *= 1.2;
-                    if (syn.id === 'thunder_rapid') i.currentFireRate *= 0.7;
-                    if (syn.id === 'leaf_regen') i.range *= 1.15;
-                    if (syn.id === 'ice_freeze') i.debuffEfficiency = 1.25;
-                    if (syn.id === 'gem_legend') i.critChance = 0.1;
-                    if (syn.id === 'shadow_curse') i.executeThreshold = 0.3;
-                    if (syn.id === 'plasma_boom') i.aoeMult = 1.5;
-                    if (syn.id === 'mystic_pierce') i.pierceCount = (i.pierceCount || 0) + 1;
-                });
-            }
-        });
-
-        return { activeCombos };
-    }
-
-    _areAdjacent(itemA, itemB, slotSize) {
-        if (!itemA || !itemB) return false;
-        const a = itemA.gridPos || { x: Math.floor(itemA.x / slotSize), y: Math.floor(itemA.y / slotSize) };
-        const b = itemB.gridPos || { x: Math.floor(itemB.x / slotSize), y: Math.floor(itemB.y / slotSize) };
-
-        const cellsA = [];
-        itemA.shape.forEach((row, dy) => {
-            row.forEach((v, dx) => { if (v) cellsA.push({ x: a.x + dx, y: a.y + dy }); });
-        });
-
-        const cellsB = [];
-        itemB.shape.forEach((row, dy) => {
-            row.forEach((v, dx) => { if (v) cellsB.push({ x: b.x + dx, y: b.y + dy }); });
-        });
-
-        for (let cA of cellsA) {
-            for (let cB of cellsB) {
-                const dist = Math.abs(cA.x - cB.x) + Math.abs(cA.y - cB.y);
-                if (dist === 1) return true;
-            }
-        }
-        return false;
     }
 }

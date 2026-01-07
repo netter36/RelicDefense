@@ -205,82 +205,112 @@ export class UIManager {
             tablet: '버프'
         };
 
-        // Filter Logic
-        const filteredItems = ITEMS.filter(item => {
-            // 1. Tab Filter
+        const ROLE_MAP = {
+            sniper: '저격',
+            artillery: '포격',
+            assault: '돌격',
+            support: '지원'
+        };
+
+        const filteredItems = this._filterItems(TAG_MAP);
+
+        filteredItems.forEach(item => {
+            const el = this._createShopItemElement(item, TAG_MAP, ROLE_MAP, ATTACK_TYPE_MAP);
+            this.shopList.appendChild(el);
+        });
+    }
+
+    _filterItems(TAG_MAP) {
+        return ITEMS.filter(item => {
             if (this.activeTab === 'artifact' && item.type !== 'artifact') return false;
             if (this.activeTab === 'module' && item.type !== 'tablet') return false;
-
-            // 2. Tag Filter
             if (this.activeTag === '전체') return true;
 
-            // Check Element or Type match
             const elTag = TAG_MAP[item.element];
             const typeTag = TAG_MAP[item.type];
-            
-            // Check Buff Type for Modules
             let buffTag = null;
             if (item.type === 'tablet' && item.buff) {
                 if (item.buff.type === 'atk') buffTag = '공격';
                 if (item.buff.type === 'range') buffTag = '범위';
-                // Add more mapping if needed
             }
 
             return [elTag, typeTag, buffTag].filter(Boolean).includes(this.activeTag);
         });
+    }
 
-        filteredItems.forEach(item => {
-            const cost = item.type === 'tablet' ? GAME_CONFIG.COSTS.TABLET : GAME_CONFIG.COSTS.ARTIFACT;
-            const canAfford = this.scene.gold >= cost;
+    _createShopItemElement(item, TAG_MAP, ROLE_MAP, ATTACK_TYPE_MAP) {
+        const cost = item.type === 'tablet' ? GAME_CONFIG.COSTS.TABLET : GAME_CONFIG.COSTS.ARTIFACT;
+        const canAfford = this.scene.gold >= cost;
 
-            const div = document.createElement('div');
-            div.className = `shop-item ${canAfford ? '' : 'disabled'}`;
-            if (!canAfford) div.style.opacity = '0.5';
+        const div = document.createElement('div');
+        div.className = `shop-item ${canAfford ? '' : 'disabled'}`;
+        if (!canAfford) div.style.opacity = '0.5';
 
-            // Generate shape preview
-            let shapeHtml = '<div style="display:grid; gap:2px; justify-content:center; align-items:center;">';
-            item.shape.forEach(row => {
-                shapeHtml += '<div style="display:flex; gap:2px;">';
-                row.forEach(cell => {
-                    const colorVal = ELEMENT_COLORS[item.element] || 0x64748b;
-                    const colorHex = '#' + colorVal.toString(16).padStart(6, '0');
-                    const bg = cell ? colorHex : 'transparent';
-                    shapeHtml += `<div style="width:8px; height:8px; background:${bg}; border-radius:1px;"></div>`;
-                });
-                shapeHtml += '</div>';
+        const shapeHtml = this._generateShapePreview(item);
+        const tagsHtml = this._generateTagsHtml(item, TAG_MAP, ROLE_MAP, ATTACK_TYPE_MAP);
+
+        div.innerHTML = `
+            <div class="shop-item-icon">
+                ${shapeHtml}
+            </div>
+            <div class="shop-item-info">
+                <div class="shop-item-name">${item.name}</div>
+                <div class="shop-item-meta">
+                    ${tagsHtml}
+                    <span class="shop-item-cost" style="color: ${canAfford ? '#ffd700' : '#ff4444'}">💰 ${cost}</span>
+                </div>
+            </div>
+        `;
+
+        div.onmousemove = (e) => this.showTooltip(e, item);
+        div.onmouseleave = () => this.hideTooltip();
+        div.onclick = () => {
+            if (!canAfford) return;
+            
+            // Auto-placement logic
+            if (this.scene.gridSystem) {
+                const placed = this.scene.gridSystem.autoPlaceItem(item.id);
+                if (placed) {
+                    this.scene.spendGold(cost);
+                } else {
+                    // Feedback for full inventory?
+                }
+            }
+        };
+        return div;
+    }
+
+    _generateShapePreview(item) {
+        let shapeHtml = '<div style="display:grid; gap:2px; justify-content:center; align-items:center;">';
+        item.shape.forEach(row => {
+            shapeHtml += '<div style="display:flex; gap:2px;">';
+            row.forEach(cell => {
+                const colorVal = ELEMENT_COLORS[item.element] || 0x64748b;
+                const colorHex = '#' + colorVal.toString(16).padStart(6, '0');
+                const bg = cell ? colorHex : 'transparent';
+                shapeHtml += `<div style="width:8px; height:8px; background:${bg}; border-radius:1px;"></div>`;
             });
             shapeHtml += '</div>';
-
-            div.innerHTML = `
-                <div class="shop-item-icon">
-                    ${shapeHtml}
-                </div>
-                <div class="shop-item-info">
-                    <div class="shop-item-name">${item.name}</div>
-                    <div class="shop-item-meta">
-                        <span class="shop-item-type">${TAG_MAP[item.element] || '기본'}</span>
-                        <span class="shop-item-cost" style="color: ${canAfford ? '#ffd700' : '#ff4444'}">💰 ${cost}</span>
-                    </div>
-                </div>
-            `;
-
-            div.onmousemove = (e) => this.showTooltip(e, item);
-            div.onmouseleave = () => this.hideTooltip();
-            div.onclick = () => {
-                if (!canAfford) return;
-                
-                // Auto-placement logic
-                if (this.scene.gridSystem) {
-                    const placed = this.scene.gridSystem.autoPlaceItem(item.id);
-                    if (placed) {
-                        this.scene.spendGold(cost);
-                    } else {
-                        // Feedback for full inventory?
-                    }
-                }
-            };
-            this.shopList.appendChild(div);
         });
+        shapeHtml += '</div>';
+        return shapeHtml;
+    }
+
+    _generateTagsHtml(item, TAG_MAP, ROLE_MAP, ATTACK_TYPE_MAP) {
+        let tagsHtml = '';
+        if (item.element && TAG_MAP[item.element]) {
+            tagsHtml += `<span class="shop-item-type" style="color:${this.getElementColor(item.element)}">${TAG_MAP[item.element]}</span>`;
+        }
+        if (item.role && ROLE_MAP[item.role]) {
+            tagsHtml += `<span class="shop-item-type">${ROLE_MAP[item.role]}</span>`;
+        }
+        if (item.stats && item.stats.attackType && ATTACK_TYPE_MAP[item.stats.attackType]) {
+            tagsHtml += `<span class="shop-item-attack-type">${ATTACK_TYPE_MAP[item.stats.attackType]}</span>`;
+        }
+        if (item.type === 'tablet') {
+            tagsHtml += `<span class="shop-item-type">모듈</span>`;
+        }
+        return tagsHtml;
     }
 
     showTooltip(e, item, isPlaced = false) {
@@ -372,6 +402,15 @@ export class UIManager {
                 } else if (item.buff.type === 'focus') {
                     buffText = `🔥 공격력 +${item.buff.val}% / 📉 사거리 -${item.buff.penalty}%`;
                     color = '#fbbf24'; // Amber
+                } else if (item.buff.type === 'speed') {
+                    buffText = `⚡ 공격 속도 +${item.buff.val}%`;
+                    color = '#facc15'; // Yellow
+                } else if (item.buff.type === 'crit') {
+                    buffText = `🎯 치명타 확률 +${item.buff.val}%`;
+                    color = '#e879f9'; // Pink
+                } else if (item.buff.type === 'area') {
+                    buffText = `💥 폭발 범위 +${item.buff.val}%`;
+                    color = '#f87171'; // Red
                 }
             } else {
                 buffText = `[기초 시설]`;
@@ -462,5 +501,10 @@ export class UIManager {
         }
 
         return html;
+    }
+
+    getElementColor(element) {
+        const color = ELEMENT_COLORS[element] || 0xffffff;
+        return '#' + color.toString(16).padStart(6, '0');
     }
 }

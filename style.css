@@ -6,8 +6,9 @@
     --text-primary: #e2e8f0;
     --text-secondary: #94a3b8;
     --grid-slot-size: 70px;
-    --pixel-font: 'Press Start 2P', cursive;
-    --main-font: 'Orbit', sans-serif;
+    --pixel-font: 'Black Han Sans', sans-serif; /* 제목용 두꺼운 폰트 */
+    --main-font: 'Noto Sans KR', sans-serif;   /* 본문용 깔끔한 폰트 */
+    --sub-font: 'Do Hyeon', sans-serif;         /* 부드러운 강조용 폰트 */
 
     /* Typography Scale */
     --font-xs: 0.7rem;
@@ -71,7 +72,7 @@ body {
 
 .pixel-text {
     font-family: var(--pixel-font);
-    font-size: var(--font-lg);
+    font-size: 2rem; /* Increased from var(--font-lg) */
     margin-bottom: 2px;
     color: #f59e0b;
     text-shadow: 2px 2px #000;
@@ -92,7 +93,7 @@ body {
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     font-family: var(--pixel-font);
-    font-size: 8px;
+    font-size: 0.75rem; /* Increased from 8px */
     padding: 5px 10px;
     cursor: pointer;
     transition: all 0.2s;
@@ -144,7 +145,7 @@ body {
     background: #1e1e24;
     padding: 10px;
     text-align: center;
-    font-size: var(--font-sm);
+    font-size: 1rem; /* Increased from var(--font-sm) */
     font-weight: bold;
     border-bottom: 1px solid var(--border-color);
     color: #a78bfa;
@@ -189,13 +190,13 @@ body {
 }
 
 .stat-label {
-    font-size: 0.75rem;
+    font-size: 0.85rem; /* Increased from 0.75rem */
     color: var(--text-secondary);
     margin-bottom: 4px;
 }
 
 .stat-value {
-    font-size: 0.9rem;
+    font-size: 1.1rem; /* Increased from 0.9rem */
     color: #10b981;
     font-family: var(--pixel-font);
     text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
@@ -398,7 +399,7 @@ body {
 
 .shop-item-type,
 .shop-item-attack-type {
-    font-size: 0.7rem;
+    font-size: 0.75rem; /* Increased from 0.7rem */
     color: var(--text-secondary);
     background: rgba(255, 255, 255, 0.05);
     padding: 2px 6px;
@@ -499,7 +500,7 @@ body {
     transition: opacity 0.1s ease, transform 0.1s ease;
     transform-origin: top left;
     display: none; /* Default hidden */
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Clean font */
+    font-family: var(--main-font); /* Clean font */
 }
 
 .tooltip.hidden {
@@ -575,37 +576,59 @@ body {
     color: #e2e8f0;
 }
 
+/* Enhanced Combo Item Style */
 .combo-item {
-    background: rgba(45, 45, 53, 0.6);
-    border-left: 4px solid var(--accent-color);
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 0 4px 4px 0;
-    animation: slideIn 0.3s ease-out;
+    background: linear-gradient(90deg, rgba(45, 45, 53, 0.8), rgba(26, 26, 30, 0.4));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-left: 3px solid var(--accent-color);
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    animation: slideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-10px);
-    }
+.combo-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+}
 
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+.combo-item:hover {
+    transform: translateX(4px);
+    background: linear-gradient(90deg, rgba(55, 55, 65, 0.9), rgba(35, 35, 40, 0.6));
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.combo-item:hover::before {
+    transform: translateX(100%);
 }
 
 .combo-name {
-    font-size: 10px;
+    font-size: 0.95rem; 
     font-weight: bold;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     font-family: var(--pixel-font);
     color: #f59e0b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .combo-desc {
-    font-size: 12px;
-    color: var(--text-secondary);
-    line-height: 1.3;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    line-height: 1.4;
+    padding-left: 4px;
+    border-left: 1px solid rgba(255,255,255,0.1);
 }

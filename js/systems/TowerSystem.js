@@ -179,6 +179,9 @@ export class TowerSystem {
         if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
 
         this.applyDamage(target, dmg, hit.crit, tower);
+        
+        // Add visual hit effect for chain
+        RenderUtils.showHitEffect(this.scene, target.x, target.y, RenderUtils.getProjectileColor(tower));
 
         if (jumps > 1) {
             // Find next target from CURRENT target pos
@@ -221,15 +224,16 @@ export class TowerSystem {
         const existing = target.debuffs.find(e => e.type === d.type);
         if (existing) {
             existing.duration = d.duration;
-            if (d.type === 'slow' && d.val < existing.val) existing.val = d.val;
-            if (d.type === 'vulnerable' && d.val > existing.val) existing.val = d.val;
+            if (d.type === 'slow' && d.val < existing.val) { existing.val = d.val; target.isStatusDirty = true; }
+            if (d.type === 'vulnerable' && d.val > existing.val) { existing.val = d.val; target.isStatusDirty = true; }
         } else {
             target.debuffs.push({ ...d, tick: 0 });
+            target.isStatusDirty = true;
         }
     }
 
     createHitEffect(x, y, element) {
-        RenderUtils.createHitEffect(this.scene, x, y, element);
+        RenderUtils.showHitEffect(this.scene, x, y, element);
     }
 
     fireProjectile(tower, target, origin) {
@@ -237,7 +241,9 @@ export class TowerSystem {
 
         const startX = origin ? origin.x : tower.x;
         const startY = origin ? origin.y : tower.y;
-        const proj = RenderUtils.createProjectile(this.scene, startX, startY, tower.element);
+        
+        // Use updated createProjectile with 'tower' (item) for color logic
+        const proj = RenderUtils.createProjectile(this.scene, startX, startY, target, tower);
 
         const spread = 20;
         const tx = target.x + (Math.random() * spread - spread / 2);
@@ -250,59 +256,81 @@ export class TowerSystem {
             duration: 200,
             onComplete: () => {
                 proj.destroy();
-                // Check distance to actual target to see if it 'hit'? 
-                // Since it's homing-ish (short duration), we assume hit if target active.
-                // But visual spread shouldn't affect damage logic for now unless requested.
                 if (target.active) {
-                    const hit = this.calculateDamage(tower);
-                    let dmg = hit.dmg;
-
-                    if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
-
-                    // Shadow Synergy: Execute
-                    if (tower.executeThreshold) {
-                        const hpPercent = target.hp / target.maxHp;
-                        if (hpPercent <= tower.executeThreshold) {
-                            dmg *= 2;
-                        }
-                    }
-
-                    // Apply Damage to Main Target
-                    this.applyDamage(target, dmg, hit.crit, tower);
-
-                    // Mystic Synergy: Pierce
-                    // If the tower has pierceCount, damage enemies behind the target
-                    if (tower.pierceCount && tower.pierceCount > 0) {
-                        const pierceRange = 150; // Distance behind target to check
-                        const angle = Phaser.Math.Angle.Between(startX, startY, target.x, target.y);
-                        const endX = target.x + Math.cos(angle) * pierceRange;
-                        const endY = target.y + Math.sin(angle) * pierceRange;
-
-                        // Simple line check or just "scan cone" behind
-                        // For simplicity: Find enemies near the "pierce line"
-                        if (this.scene.enemySystem) {
-                            const others = this.scene.enemySystem.monsters.getChildren().filter(m =>
-                                m !== target && m.active &&
-                                Phaser.Math.Distance.Between(m.x, m.y, target.x, target.y) <= pierceRange
-                            );
-
-                            let pierced = 0;
-                            others.forEach(m => {
-                                if (pierced >= tower.pierceCount) return;
-                                // Check if 'm' is roughly in the same direction
-                                const angleToM = Phaser.Math.Angle.Between(target.x, target.y, m.x, m.y);
-                                const diff = Math.abs(Phaser.Math.Angle.Wrap(angle - angleToM));
-                                if (diff < 0.5) { // Roughly 30 degrees cone behind
-                                    this.applyDamage(m, dmg * 0.7, hit.crit, tower); // 70% damage for pierce
-                                    this.createHitEffect(m.x, m.y, tower.element);
-                                    pierced++;
-                                }
-                            });
-                        }
+                    // [New Visual] Spear Strike for Thunder/Judgement or Arrow Rain for Leaf
+                    if (tower.id === 'thunder_heavy' || tower.id === 'judgement_prism' || tower.activeSynergy === '전격의 시너지') {
+                        RenderUtils.createSpearStrike(this.scene, target.x, target.y, 0xffff00);
+                        this.applyTowerDamageLogic(tower, target); // Apply damage immediately for spear
+                    } else if (tower.element === 'leaf' || tower.activeSynergy === '대지의 시너지') {
+                        // Arrow Rain: Damage applied on impact via callback
+                        RenderUtils.createArrowRain(this.scene, target.x, target.y, 0x4ade80, () => {
+                            if (target.active) {
+                                this.applyTowerDamageLogic(tower, target);
+                            }
+                        });
+                    } else {
+                        RenderUtils.showHitEffect(this.scene, target.x, target.y, RenderUtils.getProjectileColor(tower));
+                        this.applyTowerDamageLogic(tower, target);
                     }
                 }
             }
         });
+    }
+
+    applyTowerDamageLogic(tower, target) {
+        if (!target.active) return;
+
+        const hit = this.calculateDamage(tower);
+        let dmg = hit.dmg;
+
+        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
+
+        // Shadow Synergy: Execute
+        if (tower.activeSynergy === '그림자의 시너지' || tower.executeThreshold) {
+            const hpPercent = target.hp / target.maxHp;
+            const threshold = tower.executeThreshold || 0.3;
+            if (hpPercent <= threshold) {
+                dmg *= 2;
+                RenderUtils.showFloatingText(this.scene, target.x, target.y, "EXECUTE!", '#a855f7');
+            }
+        }
+
+        // Apply Damage to Main Target
+        this.applyDamage(target, dmg, hit.crit, tower);
+
+        // Mystic Synergy: Pierce
+        if (tower.activeSynergy === '신비의 시너지' || (tower.pierceCount && tower.pierceCount > 0)) {
+            const pierceRange = 150;
+            // Recalculate angle since projectile is gone, use tower to target angle
+            // Note: For arrow rain, 'origin' is sky, but we can use tower position for directionality or just area scan
+            // Using simple proximity for secondary targets
+            
+            if (this.scene.enemySystem) {
+                const others = this.scene.enemySystem.monsters.getChildren().filter(m =>
+                    m !== target && m.active &&
+                    Phaser.Math.Distance.Between(m.x, m.y, target.x, target.y) <= pierceRange
+                );
+
+                let pierced = 0;
+                const maxPierce = tower.pierceCount || 1;
+                
+                // For pierce, we ideally want "behind" the target relative to the tower.
+                const originX = tower.el ? tower.el.x : tower.x;
+                const originY = tower.el ? tower.el.y : tower.y;
+                const angle = Phaser.Math.Angle.Between(originX, originY, target.x, target.y);
+
+                others.forEach(m => {
+                    if (pierced >= maxPierce) return;
+                    const angleToM = Phaser.Math.Angle.Between(target.x, target.y, m.x, m.y);
+                    const diff = Math.abs(Phaser.Math.Angle.Wrap(angle - angleToM));
+                    if (diff < 0.5) { 
+                        this.applyDamage(m, dmg * 0.7, hit.crit, tower);
+                        RenderUtils.showHitEffect(this.scene, m.x, m.y, RenderUtils.getProjectileColor(tower));
+                        pierced++;
+                    }
+                });
+            }
+        }
     }
 
     // Helper to centralize damage application
@@ -326,9 +354,6 @@ export class TowerSystem {
         if (tower && tower.stats && tower.stats.debuff) {
             this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
         }
-        if (tower) {
-            this.createHitEffect(target.x, target.y, tower.element);
-        }
     }
 
     fireLaser(tower, target, origin) {
@@ -351,6 +376,9 @@ export class TowerSystem {
 
         // Apply Damage using centralized helper
         this.applyDamage(target, dmg, hit.crit, tower);
+        
+        // Add visual hit effect for laser
+        RenderUtils.showHitEffect(this.scene, target.x, target.y, RenderUtils.getProjectileColor(tower));
     }
 
     fireNova(tower, origin) {
@@ -379,6 +407,8 @@ export class TowerSystem {
                     if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
                     
                     this.applyDamage(m, dmg, hit.crit, tower);
+                    // Add visual hit effect for nova
+                    RenderUtils.showHitEffect(this.scene, m.x, m.y, RenderUtils.getProjectileColor(tower));
                 }
             });
         }
@@ -389,7 +419,7 @@ export class TowerSystem {
         const startY = origin ? origin.y : tower.y;
 
         // RenderUtils를 사용하여 통일된 투사체 생성 (Depth 100 적용됨)
-        const bomb = RenderUtils.createProjectile(this.scene, startX, startY, tower.element);
+        const bomb = RenderUtils.createProjectile(this.scene, startX, startY, target, tower);
         
         // 추가적인 Bomb 스타일링 (약간 더 크게)
         bomb.scale = 1.5;
@@ -406,12 +436,12 @@ export class TowerSystem {
                 
                 // Explode at target location
                 const hit = this.calculateDamage(tower);
-                this.createExplosion(hitX, hitY, tower.stats.aoeRadius || COMBAT_CONFIG.BOMB_RADIUS, hit.dmg, hit.crit);
+                this.createExplosion(hitX, hitY, tower.stats.aoeRadius || COMBAT_CONFIG.BOMB_RADIUS, hit.dmg, hit.crit, tower);
             }
         });
     }
 
-    createExplosion(x, y, radius, damage, isCrit) {
+    createExplosion(x, y, radius, damage, isCrit, tower) {
         // Visual
         const blast = this.scene.add.circle(x, y, 10, 0xffaa00, 0.6);
         blast.setDepth(100); // 폭발 이펙트도 Depth 100으로 상향
@@ -427,11 +457,18 @@ export class TowerSystem {
         if (this.scene.monsters) {
             this.scene.monsters.getChildren().forEach(m => {
                 if (!m.active) return;
-                if (Phaser.Math.Distance.Between(x, y, m.x, m.y) <= radius) {
-                    let finalDmg = damage;
-                    if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) finalDmg *= COMBAT_CONFIG.VULNERABLE_MULT;
+                const d = Phaser.Math.Distance.Between(x, y, m.x, m.y);
+                if (d <= radius) {
+                    this.applyDamage(m, damage, isCrit, tower);
                     
-                    this.scene.enemySystem.takeDamage(m, Math.floor(finalDmg), isCrit);
+                    // [New Effect] Knockback for Plasma
+                    if (tower && (tower.element === 'plasma' || tower.activeSynergy === '플라즈마 시너지')) {
+                        if (this.scene.enemySystem && this.scene.enemySystem.applyKnockback) {
+                             // Knockback distance: 30px (small) to 60px (large)
+                             const force = 40;
+                             this.scene.enemySystem.applyKnockback(m, x, y, force);
+                        }
+                    }
                 }
             });
         }
