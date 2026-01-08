@@ -7,158 +7,101 @@ export const ITEMS = [
     { id: 'tablet_crit', name: '정밀 조준경', shape: [[1]], width: 1, height: 1, type: 'tablet', buff: { type: 'crit', val: 15 }, desc: '인접 아티팩트의 치명타 확률을 15% 증가시킵니다.' },
     { id: 'tablet_area', name: '확장기', shape: [[1]], width: 1, height: 1, type: 'tablet', buff: { type: 'area', val: 30 }, desc: '인접 아티팩트의 폭발 범위를 30% 증가시킵니다. (광역 무기 전용)' },
 
-    // --- 연사형 (Rapid) ---
+    // --- 공격형 아티팩트 (Unified Normal Theme) ---
+    
+    // 1. RAPID (연사형)
     {
-        id: 'thunder_rapier', name: '뇌전검: 섬광', shape: [[1], [1]], width: 1, height: 2, element: 'thunder', role: 'assault', type: 'artifact',
+        id: 'thunder_rapier', name: '래피드 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
         stats: { atk: 25, range: 280, fireRate: 80, attackType: 'rapid', burstCount: 6, reloadTime: 1000 },
-        desc: '고압의 전류를 검신에 모아 전방으로 6회 연속 투사합니다.',
-        flavor: '"베는 것보다 찌르는 것이 빠르다."'
+        desc: '전방으로 투사체를 고속으로 연속 발사합니다.',
+        flavor: '"속도가 생명이다."'
     },
+    
+    // 2. LASER (레이저형)
     {
-        id: 'thunder_heavy', name: '뇌신: 천둥망치', shape: [[1, 1]], width: 2, height: 1, element: 'thunder', role: 'artillery', type: 'artifact',
-        stats: { atk: 45, range: 320, fireRate: 100, attackType: 'rapid', burstCount: 10, reloadTime: 1500 },
-        desc: '주변의 대기를 이온화하여 10발의 뇌전을 폭풍처럼 쏟아냅니다.',
-        flavor: '"하늘이 분노하노라."'
-    },
-
-    // --- 레이저형 (Laser) ---
-    {
-        id: 'fire_laser', name: '솔라 빔', shape: [[1, 1]], width: 2, height: 1, element: 'fire', role: 'sniper', type: 'artifact',
+        id: 'fire_laser', name: '레이저 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
         stats: { atk: 18, range: 450, fireRate: 50, attackType: 'laser' },
-        desc: '고열의 플라즈마를 일직선으로 방출하여 닿는 모든 것을 녹입니다.',
-        flavor: '"태양의 열기를 견딜 수 있겠나?"'
-    },
-    {
-        id: 'gem_laser', name: '공허 포격기', shape: [[1], [1]], width: 1, height: 2, element: 'gem', role: 'sniper', type: 'artifact',
-        stats: { atk: 35, range: 550, fireRate: 30, attackType: 'laser' },
-        desc: '증폭된 심연의 마력을 공명시켜 초장거리의 광선을 발사합니다.',
-        flavor: '"심연은 그저 바라볼 뿐이다."'
+        desc: '일직선으로 관통하는 광선을 발사합니다.',
+        flavor: '"정밀 타격."'
     },
 
-    // --- 광역 공격형 (AoE) ---
+    // 3. NOVA (자신 주변 광역)
     {
-        id: 'ice_nova', name: '프로스트 노바', shape: [[1, 1]], width: 2, height: 1, element: 'ice', role: 'artillery', type: 'artifact',
+        id: 'ice_nova', name: '노바 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
         stats: { atk: 60, range: 250, fireRate: 1200, attackType: 'nova', aoeRadius: 140 },
-        desc: '대기 중의 수분을 순간적으로 응결시켜 주변을 혹한의 지옥으로 만듭니다.',
-        flavor: '"모든 것을 얼려버려라."'
+        desc: '주변 모든 적에게 충격파를 발생시킵니다.',
+        flavor: '"접근 거부."'
     },
+
+    // 4. BOMB (원거리 폭발)
     {
-        id: 'leaf_blast', name: '대지의 분노', shape: [[1, 1]], width: 2, height: 1, element: 'leaf', role: 'artillery', type: 'artifact',
+        id: 'leaf_blast', name: '밤 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
         stats: { atk: 80, range: 280, fireRate: 1800, attackType: 'bomb', aoeRadius: 180 },
-        desc: '폭발성 씨앗을 투척하여 넓은 범위에 자연의 힘을 터뜨립니다.',
-        flavor: '"자연은 결코 자비롭지 않다."'
+        desc: '폭발성 탄환을 투척하여 범위 피해를 입힙니다.',
+        flavor: '"화력 지원."'
     },
 
-    // --- 일반형 (Normal) ---
+    // 5. NORMAL (일반형)
     {
-        id: 'fire_cannon', name: '이그니스 캐논', shape: [[1, 1]], width: 2, height: 1, element: 'fire', role: 'artillery', type: 'artifact',
+        id: 'fire_cannon', name: '캐논 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
         stats: { atk: 90, range: 300, fireRate: 1000, attackType: 'normal' },
-        desc: '압축된 화염구를 곡사로 날려 강력한 폭발을 일으킵니다.',
-        flavor: '"불타버려라!"'
+        desc: '강력한 단일 투사체를 발사합니다.',
+        flavor: '"기본에 충실하라."'
     },
+
+    // 6. CHAIN (체인 라이트닝)
     {
-        id: 'leaf_bow', name: '실바나스의 활', shape: [[1], [1]], width: 1, height: 2, element: 'leaf', role: 'sniper', type: 'artifact',
-        stats: { atk: 45, range: 450, fireRate: 600, attackType: 'normal' },
-        desc: '바람의 정령이 깃든 화살을 날려 먼 거리의 적을 저격합니다.',
-        flavor: '"바람이 나를 이끈다."'
-    },
-    // --- 특수형 (Special) ---
-    {
-        id: 'judgement_prism', name: '심판의 빛', shape: [[1, 1]], width: 2, height: 1, element: 'gem', role: 'assault', type: 'artifact',
+        id: 'judgement_prism', name: '체인 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
         stats: { atk: 40, range: 380, fireRate: 1100, attackType: 'chain', chainCount: 4 },
-        desc: '빛을 굴절시켜 다수의 적을 연쇄적으로 타격합니다.',
-        flavor: '"정의는 실현될 것이다."'
+        desc: '적을 타고 흐르는 연쇄 공격을 가합니다.',
+        flavor: '"일망타진."'
     },
+
+    // 7. MULTI (산탄/다중)
     {
-        id: 'chaos_orb', name: '혼돈의 보주', shape: [[1], [1]], width: 1, height: 2, element: 'fire', role: 'assault', type: 'artifact',
+        id: 'chaos_orb', name: '멀티 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
         stats: { atk: 35, range: 320, fireRate: 900, attackType: 'multi', projectileCount: 4 },
-        desc: '불안정한 마력을 흩뿌려 여러 적을 동시에 요격합니다.',
-        flavor: '"혼돈 그 자체."'
+        desc: '여러 발의 투사체를 동시에 발사합니다.',
+        flavor: '"다수에는 다수로."'
     },
 
-    // --- 디버프형 (Support/Debuff) ---
+    // 8. ORBIT (위성)
     {
-        id: 'leaf_spore', name: '베놈 스프레이', shape: [[1, 1]], width: 2, height: 1, element: 'leaf', role: 'support', type: 'artifact',
-        stats: { atk: 25, range: 280, fireRate: 800, attackType: 'normal', debuff: { type: 'poison', val: 10, duration: 5000 } },
-        desc: '강력한 독소를 품은 포자를 날려 적을 중독시킵니다.',
-        flavor: '"고통스러운 죽음을 맞이하라."'
-    },
-    {
-        id: 'thunder_static', name: '스태틱 완드', shape: [[1], [1]], width: 1, height: 2, element: 'thunder', role: 'support', type: 'artifact',
-        stats: { atk: 20, range: 320, fireRate: 1400, attackType: 'chain', chainCount: 3, debuff: { type: 'stun', duration: 1000, chance: 0.6 } },
-        desc: '전류를 방출하여 적을 연쇄적으로 마비시킵니다.',
-        flavor: '"움직일 수 없을걸?"'
-    },
-    {
-        id: 'gem_curse', name: '사우론의 눈', shape: [[1, 1]], width: 2, height: 1, element: 'gem', role: 'support', type: 'artifact',
-        stats: { atk: 30, range: 480, fireRate: 1800, attackType: 'laser', debuff: { type: 'vulnerable', val: 1.8, duration: 4000 } },
-        desc: '적의 약점을 노출시켜 받는 피해를 80% 증가시킵니다.',
-        flavor: '"너의 약점이 보인다."'
-    },
-    {
-        id: 'ice_shard', name: '빙결의 창', shape: [[1, 1]], width: 2, height: 1, element: 'ice', role: 'support', type: 'artifact',
-        stats: { atk: 30, range: 250, fireRate: 900, attackType: 'normal', debuff: { type: 'slow', val: 0.5, duration: 3000 } },
-        desc: '날카로운 얼음 조각으로 적의 움직임을 50% 둔화시킵니다.',
-        flavor: '"얼어붙어라."'
+        id: 'orbit_prism', name: '오비탈 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
+        stats: { atk: 35, range: 0, fireRate: 0, attackType: 'orbit', orbitCount: 4, orbitSpeed: 0.06, orbitRadius: 90, hitCooldown: 400 },
+        desc: '타워 주위를 회전하는 위성으로 적을 공격합니다.',
+        flavor: '"철벽 방어."'
     },
 
-    // --- 그림자 (Shadow) ---
+    // 9. BEAM (방사형)
     {
-        id: 'shadow_dagger', name: '팬텀 블레이드', shape: [[1], [1]], width: 1, height: 2, element: 'shadow', role: 'assault', type: 'artifact',
-        stats: { atk: 40, range: 240, fireRate: 400, attackType: 'rapid', burstCount: 3, reloadTime: 800 },
-        desc: '보이지 않는 속도로 적의 급소를 연속 가격합니다.',
-        flavor: '"그림자처럼 은밀하게."'
-    },
-    {
-        id: 'shadow_orb', name: '다크 매터', shape: [[1, 1]], width: 2, height: 1, element: 'shadow', role: 'sniper', type: 'artifact',
-        stats: { atk: 65, range: 420, fireRate: 1100, attackType: 'normal' },
-        desc: '적을 추적하는 암흑 에너지를 발사합니다.',
-        flavor: '"어둠이 너를 삼키리라."'
-    },
-    {
-        id: 'shadow_scythe', name: '소울 리퍼', shape: [[1, 1]], width: 2, height: 1, element: 'shadow', role: 'assault', type: 'artifact',
-        stats: { atk: 90, range: 320, fireRate: 1600, attackType: 'chain', chainCount: 5 },
-        desc: '영혼을 수확하는 낫을 휘둘러 다수의 적을 베어냅니다.',
-        flavor: '"영혼을 거두러 왔다."'
+        id: 'fire_thrower', name: '빔 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
+        stats: { atk: 12, range: 220, fireRate: 150, attackType: 'beam', coneAngle: 0.8 }, 
+        desc: '전방에 지속적인 범위 피해를 입힙니다.',
+        flavor: '"모두 쓸어버려라."'
     },
 
-    // --- 플라즈마 (Plasma) ---
+    // 10. RICOCHET (도탄)
     {
-        id: 'plasma_launcher', name: '플라즈마 캐논', shape: [[1, 1]], width: 2, height: 1, element: 'plasma', role: 'artillery', type: 'artifact',
-        stats: { atk: 110, range: 420, fireRate: 1800, attackType: 'bomb', aoeRadius: 180 },
-        desc: '불안정한 플라즈마 구체를 날려 광범위한 폭발을 일으킵니다.',
-        flavor: '"폭발적인 위력."'
-    },
-    {
-        id: 'plasma_flux', name: '플럭스 라이플', shape: [[1], [1]], width: 1, height: 2, element: 'plasma', role: 'assault', type: 'artifact',
-        stats: { atk: 40, range: 320, fireRate: 450, attackType: 'multi', projectileCount: 4 },
-        desc: '전방으로 플라즈마 입자를 흩뿌려 탄막을 형성합니다.',
-        flavor: '"빛의 비를 내려주지."'
-    },
-    {
-        id: 'plasma_core', name: '뉴클리어 코어', shape: [[1, 1]], width: 2, height: 1, element: 'plasma', role: 'artillery', type: 'artifact',
-        stats: { atk: 250, range: 280, fireRate: 2500, attackType: 'nova', aoeRadius: 300 },
-        desc: '핵융합 반응을 임계점까지 끌어올려 주변을 증발시킵니다.',
-        flavor: '"모든 것을 태워버려라."'
+        id: 'shadow_ricochet', name: '리코쳇 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
+        stats: { atk: 45, range: 400, fireRate: 1200, attackType: 'ricochet', ricochetCount: 3 },
+        desc: '적에게 부딪히면 튕기는 투사체를 발사합니다.',
+        flavor: '"예측 불가능."'
     },
 
-    // --- 신비 (Mystic) ---
+    // 11. TRAP (지뢰)
     {
-        id: 'mystic_bolt', name: '아케인 볼트', shape: [[1], [1]], width: 1, height: 2, element: 'mystic', role: 'sniper', type: 'artifact',
-        stats: { atk: 55, range: 480, fireRate: 1000, attackType: 'normal' },
-        desc: '적을 관통하는 비전 마법의 화살을 발사합니다.',
-        flavor: '"마법의 힘을 보여주지."'
+        id: 'spider_mine', name: '트랩 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
+        stats: { atk: 150, range: 300, fireRate: 3000, attackType: 'trap', aoeRadius: 120, maxTraps: 5, duration: 15000 },
+        desc: '경로상에 지뢰를 매설합니다.',
+        flavor: '"함정 발동."'
     },
+
+    // 12. RANDOM_BOMB (무차별 폭격)
     {
-        id: 'mystic_prism', name: '스타폴 프리즘', shape: [[1], [1]], width: 1, height: 2, element: 'mystic', role: 'assault', type: 'artifact',
-        stats: { atk: 35, range: 420, fireRate: 1300, attackType: 'multi', projectileCount: 4 },
-        desc: '마력을 여러 갈래로 분산시켜 다수의 적을 동시에 꿰뚫습니다.',
-        flavor: '"별들이 쏟아진다."'
-    },
-    {
-        id: 'mystic_scroll', name: '고대 비전서', shape: [[1, 1]], width: 2, height: 1, element: 'mystic', role: 'sniper', type: 'artifact',
-        stats: { atk: 85, range: 550, fireRate: 1800, attackType: 'laser' },
-        desc: '강력한 고대 주문을 영창하여 전방의 적들을 소멸시킵니다.',
-        flavor: '"지식은 곧 힘이다."'
+        id: 'mortar_cannon', name: '박격포 타워', shape: [[1, 1]], width: 2, height: 1, element: 'normal', type: 'artifact',
+        stats: { atk: 120, range: 350, fireRate: 2000, attackType: 'random_bomb', aoeRadius: 160 },
+        desc: '사거리 내의 무작위 위치를 폭격합니다.',
+        flavor: '"지원 사격 개시."'
     }
 ];

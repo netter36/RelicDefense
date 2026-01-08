@@ -62,7 +62,7 @@ export class GridSystem {
         }
     }
 
-    createItem(id, gx, gy) {
+    createItem(id, gx, gy, isRotated = false) {
         const template = ITEMS.find(i => i.id === id);
         if (!template) return null;
 
@@ -76,6 +76,26 @@ export class GridSystem {
 
         if (item.width === undefined) item.width = item.shape[0].length;
         if (item.height === undefined) item.height = item.shape.length;
+
+        // [추가] 생성 시 회전 적용
+        if (isRotated) {
+            // Rotate Shape
+            const oldShape = item.shape;
+            const rows = oldShape.length;
+            const cols = oldShape[0].length;
+            const newShape = Array.from({ length: cols }, () => Array(rows).fill(0));
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    newShape[c][rows - 1 - r] = oldShape[r][c];
+                }
+            }
+            item.shape = newShape;
+            
+            // Swap width/height
+            const temp = item.width;
+            item.width = item.height;
+            item.height = temp;
+        }
 
         const container = this.scene.add.container(0, 0);
         container.setSize(item.width * SLOT_SIZE, item.height * SLOT_SIZE);
@@ -228,14 +248,46 @@ export class GridSystem {
         const h = template.height || template.shape.length;
         const dummy = { shape: template.shape, width: w, height: h };
 
+        // 1. Try Default Orientation (Horizontal)
         for (let y = 0; y <= GRID_HEIGHT - h; y++) {
             for (let x = 0; x <= GRID_WIDTH - w; x++) {
                 if (this.canPlace(dummy, x, y)) {
-                    this.createItem(id, x, y);
+                    this.createItem(id, x, y, false);
                     return true;
                 }
             }
         }
+
+        // 2. Try Rotated Orientation (Vertical)
+        // Only if it's not square (1x1)
+        if (w !== h) {
+            // Rotate dummy shape logic
+            const oldShape = dummy.shape;
+            const rows = oldShape.length;
+            const cols = oldShape[0].length;
+            const newShape = Array.from({ length: cols }, () => Array(rows).fill(0));
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    newShape[c][rows - 1 - r] = oldShape[r][c];
+                }
+            }
+            
+            const dummyRotated = {
+                shape: newShape,
+                width: h,  // Swapped
+                height: w  // Swapped
+            };
+
+            for (let y = 0; y <= GRID_HEIGHT - dummyRotated.height; y++) {
+                for (let x = 0; x <= GRID_WIDTH - dummyRotated.width; x++) {
+                    if (this.canPlace(dummyRotated, x, y)) {
+                        this.createItem(id, x, y, true); // Create as rotated
+                        return true;
+                    }
+                }
+            }
+        }
+
         return false;
     }
 
@@ -247,6 +299,11 @@ export class GridSystem {
             if (this.hoverRange) {
                 this.hoverRange.clear();
             }
+        }
+        
+        // [추가] 타워 시스템 정리 (오비탈 투사체 등)
+        if (this.scene.towerSystem) {
+            this.scene.towerSystem.cleanupTower(item);
         }
 
         this.setGrid(item, null);
@@ -378,6 +435,6 @@ export class GridSystem {
         this.placedItems.forEach(item => { if (item.el) RenderUtils.renderProceduralShape(this.scene, item.el, item); });
         const totalAtk = this.placedItems.reduce((acc, i) => acc + (i.currentAtk || 0), 0);
         this.uiManager.updateHUD({ atk: Math.round(totalAtk), fireBonus: 0, artifacts: 0, combos: activeCombos });
-        this.uiManager.renderItems();
+        // this.uiManager.renderItems(); // Removed: Prevent shop flickering
     }
 }

@@ -53,6 +53,25 @@ export class UIManager {
     updateGold(amount) {
         const el = document.getElementById('stat-gold');
         if (el) el.innerText = amount;
+
+        // 상점 아이템 상태 업데이트
+        if (this.shopList) {
+            const items = this.shopList.querySelectorAll('.shop-item');
+            items.forEach(item => {
+                const cost = parseInt(item.dataset.cost);
+                const priceEl = item.querySelector('.shop-item-cost');
+                
+                if (amount >= cost) {
+                    item.classList.remove('disabled');
+                    item.style.opacity = '1';
+                    if (priceEl) priceEl.style.color = '#ffd700';
+                } else {
+                    item.classList.add('disabled');
+                    item.style.opacity = '0.5';
+                    if (priceEl) priceEl.style.color = '#ff4444';
+                }
+            });
+        }
     }
 
     updateMonsterCount(count) {
@@ -191,7 +210,7 @@ export class UIManager {
         const TAG_MAP = {
             'fire': '화염', 'ice': '냉기', 'thunder': '전격', 'leaf': '대지', 'gem': '심연', 
             'plasma': '플라즈마', 'mystic': '신비', 'shadow': '그림자',
-            'tablet': '모듈', 'artifact': '아티팩트' // 석판 -> 모듈 명칭 변경
+            'tablet': '모듈', 'artifact': '아티팩트', 'normal': '노말'
         };
 
         const ATTACK_TYPE_MAP = {
@@ -202,6 +221,11 @@ export class UIManager {
             bomb: '폭발',
             chain: '연쇄',
             multi: '다중',
+            orbit: '위성',
+            beam: '방사',
+            ricochet: '도탄',
+            trap: '지뢰',
+            random_bomb: '폭격',
             tablet: '버프'
         };
 
@@ -240,19 +264,20 @@ export class UIManager {
 
     _createShopItemElement(item, TAG_MAP, ROLE_MAP, ATTACK_TYPE_MAP) {
         const cost = item.type === 'tablet' ? GAME_CONFIG.COSTS.TABLET : GAME_CONFIG.COSTS.ARTIFACT;
+        // 초기 렌더링 시에도 현재 골드 기반으로 상태 설정
         const canAfford = this.scene.gold >= cost;
 
         const div = document.createElement('div');
         div.className = `shop-item ${canAfford ? '' : 'disabled'}`;
+        div.dataset.cost = cost; // 골드 업데이트 시 참조용
         if (!canAfford) div.style.opacity = '0.5';
 
-        const shapeHtml = this._generateShapePreview(item);
+        // const shapeHtml = this._generateShapePreview(item); // Preview removed
         const tagsHtml = this._generateTagsHtml(item, TAG_MAP, ROLE_MAP, ATTACK_TYPE_MAP);
+        // const statsHtml = this._generateStatSummary(item); // New stat summary removed by request
 
         div.innerHTML = `
-            <div class="shop-item-icon">
-                ${shapeHtml}
-            </div>
+            <!-- Preview Removed -->
             <div class="shop-item-info">
                 <div class="shop-item-name">${item.name}</div>
                 <div class="shop-item-meta">
@@ -265,7 +290,8 @@ export class UIManager {
         div.onmousemove = (e) => this.showTooltip(e, item);
         div.onmouseleave = () => this.hideTooltip();
         div.onclick = () => {
-            if (!canAfford) return;
+            // 클릭 시점의 골드 확인 (중요)
+            if (this.scene.gold < cost) return;
             
             // Auto-placement logic
             if (this.scene.gridSystem) {
@@ -273,7 +299,15 @@ export class UIManager {
                 if (placed) {
                     this.scene.spendGold(cost);
                 } else {
-                    // Feedback for full inventory?
+                    // 배치 실패 피드백 (화면 흔들림 또는 경고)
+                    const gameContainer = document.querySelector('.game-container');
+                    gameContainer.style.animation = 'none';
+                    gameContainer.offsetHeight; /* trigger reflow */
+                    gameContainer.style.animation = 'shake 0.3s';
+                    
+                    // 또는 상점 아이템 자체에 피드백
+                    div.style.transform = 'translateX(5px)';
+                    setTimeout(() => div.style.transform = 'none', 100);
                 }
             }
         };

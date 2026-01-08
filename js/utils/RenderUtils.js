@@ -944,6 +944,52 @@ export class RenderUtils {
         });
     }
 
+    static getMineTexture(scene, color) {
+        const key = `mine_tex_${color}`;
+        if (scene.textures.exists(key)) return key;
+
+        const g = scene.make.graphics({ x: 0, y: 0, add: false });
+        
+        // Mine Body
+        g.fillStyle(0x333333, 1);
+        g.fillCircle(10, 10, 8);
+        g.lineStyle(2, color, 1);
+        g.strokeCircle(10, 10, 8);
+        
+        // Blinking light (static red for texture)
+        g.fillStyle(0xff0000, 1);
+        g.fillCircle(10, 10, 3);
+        
+        // Spikes
+        g.lineStyle(2, 0x555555, 1);
+        g.lineBetween(10, 2, 10, 18);
+        g.lineBetween(2, 10, 18, 10);
+
+        g.generateTexture(key, 20, 20);
+        g.destroy();
+        return key;
+    }
+
+    static createMine(scene, x, y, color) {
+        const key = this.getMineTexture(scene, color);
+        // Use projectile group logic or standalone?
+        // Mines are persistent, better to be standalone sprites in traps group.
+        
+        const mine = scene.add.image(x, y, key);
+        mine.setDepth(21); // Slightly above monsters(20)
+        
+        // Blinking animation
+        scene.tweens.add({
+            targets: mine,
+            alpha: 0.5,
+            duration: 500,
+            yoyo: true,
+            repeat: -1
+        });
+        
+        return mine;
+    }
+
     static showFloatingText(scene, x, y, text, color = '#ffffff') {
         const txt = scene.add.text(x, y, text, {
             fontFamily: 'monospace',

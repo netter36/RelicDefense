@@ -3,10 +3,11 @@ import { MONSTER_TYPES } from '../data/monsters.js';
 import { RenderUtils } from '../utils/RenderUtils.js';
 
 export class EnemySystem {
-    constructor(scene, path, uiManager) {
+    constructor(scene, path, uiManager, effectManager) {
         this.scene = scene;
         this.path = path;
         this.uiManager = uiManager;
+        this.effectManager = effectManager;
         this.monsters = this.scene.physics.add.group();
 
         // Difficulty & Spawning scale
@@ -223,11 +224,10 @@ export class EnemySystem {
     killMonster(m) {
         if (!m.active) return;
         
-        // 3. 몬스터 사망 시 HP 바 제거 확실하게 처리
         if (m.hpBar) {
-            m.hpBar.clear(); // 그래픽 내용 지우기
-            m.hpBar.destroy(); // 객체 파괴
-            m.hpBar = null; // 참조 제거
+            m.hpBar.clear();
+            m.hpBar.destroy();
+            m.hpBar = null;
         }
         
         m.destroy();
@@ -240,17 +240,15 @@ export class EnemySystem {
         m.hp -= damage;
         this.updateHPBar(m);
         
-        // Damage text handled by TowerSystem usually, but if we need generic hit effect:
-        // RenderUtils.showHitEffect(this.scene, m.x, m.y);
-
         if (m.hp <= 0) {
             // Reward Gold
-            // Base reward * difficulty factor? Or flat? Let's do flat + small bonus
             const reward = Math.floor(GAME_CONFIG.MONSTER_REWARD * (1 + (this.difficulty - 1) * 0.5));
             this.scene.addGold(reward);
             
             // Floating Gold Text
-            this.showGoldText(m.x, m.y, reward);
+            if (this.effectManager) {
+                this.effectManager.showGoldText(m.x, m.y, reward);
+            }
 
             // HP 바 제거 및 몬스터 파괴
             if (m.hpBar) {
@@ -263,25 +261,6 @@ export class EnemySystem {
         }
     }
 
-    showGoldText(x, y, amount) {
-        const txt = this.scene.add.text(x, y - 20, `+${amount}G`, {
-            fontSize: '16px',
-            color: '#ffd700',
-            fontStyle: 'bold',
-            stroke: '#000',
-            strokeThickness: 3
-        }).setOrigin(0.5).setDepth(100);
-
-        this.scene.tweens.add({
-            targets: txt,
-            y: y - 50,
-            alpha: 0,
-            duration: 800,
-            ease: 'Back.out',
-            onComplete: () => txt.destroy()
-        });
-    }
-
     updateHPBar(m) {
         if (!m.hpBar) return;
         m.hpBar.clear();
@@ -291,6 +270,4 @@ export class EnemySystem {
         const color = r < 0.3 ? 0xef4444 : (r < 0.6 ? 0xf59e0b : 0x10b981);
         m.hpBar.fillStyle(color, 1); m.hpBar.fillRect(-w / 2, -2, w * r, 4);
     }
-
-
 }

@@ -1,15 +1,66 @@
-import { ATTACK_TYPES, COMBAT_CONFIG, UI_CONFIG, SLOT_SIZE } from '../constants.js';
+import { COMBAT_CONFIG, UI_CONFIG, SLOT_SIZE } from '../constants.js';
+import { ATTACK_TYPES } from '../types.js';
 import { RenderUtils } from '../utils/RenderUtils.js';
 
+import { ProjectileStrategy } from '../strategies/ProjectileStrategy.js';
+import { RapidStrategy } from '../strategies/RapidStrategy.js';
+import { MultiStrategy } from '../strategies/MultiStrategy.js';
+import { ChainStrategy } from '../strategies/ChainStrategy.js';
+import { LaserStrategy } from '../strategies/LaserStrategy.js';
+import { NovaStrategy } from '../strategies/NovaStrategy.js';
+import { OrbitStrategy } from '../strategies/OrbitStrategy.js';
+import { BeamStrategy } from '../strategies/BeamStrategy.js';
+import { RicochetStrategy } from '../strategies/RicochetStrategy.js';
+import { TrapStrategy } from '../strategies/TrapStrategy.js';
+import { BombStrategy } from '../strategies/BombStrategy.js';
+import { RandomBombStrategy } from '../strategies/RandomBombStrategy.js';
+
 export class TowerSystem {
-    constructor(scene) {
+    constructor(scene, effectManager) {
         this.scene = scene;
+        this.effectManager = effectManager;
+        this.traps = this.scene.add.group();
+
+        this.strategies = {
+            [ATTACK_TYPES.NORMAL]: new ProjectileStrategy(this),
+            [ATTACK_TYPES.RAPID]: new RapidStrategy(this),
+            [ATTACK_TYPES.MULTI]: new MultiStrategy(this),
+            [ATTACK_TYPES.CHAIN]: new ChainStrategy(this),
+            [ATTACK_TYPES.LASER]: new LaserStrategy(this),
+            [ATTACK_TYPES.NOVA]: new NovaStrategy(this),
+            [ATTACK_TYPES.ORBIT]: new OrbitStrategy(this),
+            [ATTACK_TYPES.BEAM]: new BeamStrategy(this),
+            [ATTACK_TYPES.RICOCHET]: new RicochetStrategy(this),
+            [ATTACK_TYPES.TRAP]: new TrapStrategy(this),
+            [ATTACK_TYPES.BOMB]: new BombStrategy(this),
+            [ATTACK_TYPES.RANDOM_BOMB]: new RandomBombStrategy(this)
+        };
+    }
+
+    update(time, placedItems) {
+        this.updateTraps(time);
+
+        placedItems.forEach(tower => {
+            if (tower.type !== 'artifact' || !tower.el) return;
+
+            const at = tower.stats.attackType || ATTACK_TYPES.NORMAL;
+            const strategy = this.strategies[at] || this.strategies[ATTACK_TYPES.NORMAL];
+            
+            strategy.update(tower, time);
+        });
+    }
+
+    cleanupTower(tower) {
+        const at = tower.stats.attackType || ATTACK_TYPES.NORMAL;
+        const strategy = this.strategies[at];
+        if (strategy) {
+            strategy.cleanup(tower);
+        }
     }
 
     getVisualCenter(tower) {
         if (!tower.shape) return { x: tower.x, y: tower.y };
 
-        // tower.x/y is the center of the bounding box
         const topLeftX = tower.x - (tower.width * SLOT_SIZE) / 2;
         const topLeftY = tower.y - (tower.height * SLOT_SIZE) / 2;
 
@@ -17,14 +68,11 @@ export class TowerSystem {
         let totalY = 0;
         let count = 0;
 
-        // Calculate center of mass based on absolute pixel positions of occupied cells
         tower.shape.forEach((row, rowIndex) => {
             row.forEach((cell, colIndex) => {
                 if (cell === 1) {
-                    // Center of this specific cell
                     const cellCenterX = topLeftX + colIndex * SLOT_SIZE + SLOT_SIZE / 2;
                     const cellCenterY = topLeftY + rowIndex * SLOT_SIZE + SLOT_SIZE / 2;
-
                     totalX += cellCenterX;
                     totalY += cellCenterY;
                     count++;
@@ -44,248 +92,43 @@ export class TowerSystem {
         let dmg = (tower.currentAtk || tower.stats.atk);
         const crit = (tower.critChance && Math.random() < tower.critChance);
         if (crit) {
-            // Use custom multiplier if present (Iron Synergy), otherwise default
             const mult = tower.critDmgMult || COMBAT_CONFIG.CRIT_DAMAGE_MULT;
             dmg *= mult;
         }
         return { dmg, crit };
     }
 
-    showDamageText(x, y, damage, isCrit) {
-        const val = Math.round(damage);
-        if (val <= 0) return;
-
-        const style = isCrit
-            ? { fontSize: '20px', color: '#dc2626', fontStyle: 'bold', stroke: '#fff', strokeThickness: 3 }
-            : { fontSize: '14px', color: '#ffffff', stroke: '#000', strokeThickness: 2 };
-
-        const textStr = isCrit ? `! ${val} !` : `${val}`;
-        const txt = this.scene.add.text(x, y - 20, textStr, style).setOrigin(0.5);
-        txt.setDepth(100);
-
-        this.scene.tweens.add({
-            targets: txt,
-            y: y - 50 - Math.random() * 20,
-            x: x + (Math.random() * 30 - 15),
-            alpha: 0,
-            scaleX: isCrit ? 1.2 : 1.0,
-            scaleY: isCrit ? 1.2 : 1.0,
-            duration: isCrit ? UI_CONFIG.CRIT_TEXT_DURATION : UI_CONFIG.DAMAGE_TEXT_DURATION,
-            ease: 'Back.out',
-            onComplete: () => txt.destroy()
-        });
-    }
-
-    update(time, placedItems) {
-        placedItems.forEach(tower => {
-            if (tower.type !== 'artifact' || !tower.el) return;
-
-            // Determine required delay based on state (Reloading vs Normal Fire)
-            let requiredDelay = tower.currentFireRate;
-            if (tower.isReloading) {
-                requiredDelay = tower.stats.reloadTime || 1500;
-            }
-
-            if (time - tower.lastFire < requiredDelay) return;
-
-            // If we passed the check and were reloading, we are now done reloading
-            if (tower.isReloading) {
-                tower.isReloading = false;
-                tower.burstCounter = 0;
-            }
-
-            const at = tower.stats.attackType;
-            const origin = this.getVisualCenter(tower);
-
-            if (at === ATTACK_TYPES.RAPID) {
-                // Burst Fire Logic
-                const target = this.getNearestMonster(origin.x, origin.y, tower.range);
-                if (target) {
-                    this.fireProjectile(tower, target, origin);
-                    tower.lastFire = time;
-
-                    tower.burstCounter = (tower.burstCounter || 0) + 1;
-                    if (tower.burstCounter >= (tower.stats.burstCount || 5)) {
-                        tower.isReloading = true;
-                    }
-                }
-            } else if (at === ATTACK_TYPES.MULTI) {
-                // Multi-Target Logic
-                const count = tower.stats.projectileCount || 3;
-                const targets = this.getMultipleMonsters(origin.x, origin.y, tower.range, count);
-                if (targets.length > 0) {
-                    targets.forEach(t => this.fireProjectile(tower, t, origin));
-                    tower.lastFire = time;
-                }
-            } else if (at === ATTACK_TYPES.CHAIN) {
-                const target = this.getNearestMonster(origin.x, origin.y, tower.range);
-                if (target) {
-                    const chainCount = tower.stats.chainCount || 3;
-                    this.fireChain(tower, target, chainCount, [], origin);
-                    tower.lastFire = time;
-                }
-            } else {
-                // Single Target Logic
-                const target = this.getNearestMonster(origin.x, origin.y, tower.range);
-                if (target) {
-                    if (at === ATTACK_TYPES.LASER) this.fireLaser(tower, target, origin);
-                    else if (at === ATTACK_TYPES.NOVA) this.fireNova(tower, origin);
-                    else if (at === ATTACK_TYPES.BOMB) this.fireBomb(tower, target, origin);
-                    else this.fireProjectile(tower, target, origin);
-                    tower.lastFire = time;
-                }
-            }
-        });
-    }
-
-    getMultipleMonsters(x, y, range, count) {
-        if (!this.scene.monsters) return [];
-        const inRange = this.scene.monsters.getChildren().filter(m => {
-            return m.active && Phaser.Math.Distance.Between(x, y, m.x, m.y) <= range;
-        });
-        // Sort by distance
-        inRange.sort((a, b) => {
-            const dA = Phaser.Math.Distance.Between(x, y, a.x, a.y);
-            const dB = Phaser.Math.Distance.Between(x, y, b.x, b.y);
-            return dA - dB;
-        });
-        return inRange.slice(0, count);
-    }
-
-    fireChain(tower, target, jumpsRemaining, hitList, origin) {
-        if (!target || !target.active || jumpsRemaining <= 0) return;
-        hitList.push(target);
-
-        // Use provided origin for the first bolt, otherwise previous logic handling
-        const startX = origin ? origin.x : tower.x;
-        const startY = origin ? origin.y : tower.y;
-
-        this._processChainLink(startX, startY, target, jumpsRemaining, hitList, tower);
-    }
-
-    _processChainLink(startX, startY, target, jumps, hitList, tower) {
-        if (!target || !target.active) return;
-
-        // Visual
-        const bolt = this.scene.add.graphics();
-        bolt.setDepth(30);
-        bolt.lineStyle(2, 0x6366f1, 1);
-        bolt.lineBetween(startX, startY, target.x, target.y);
-        this.scene.tweens.add({ targets: bolt, alpha: 0, duration: 200, onComplete: () => bolt.destroy() });
-
-        // Damage & Effect
-        const hit = this.calculateDamage(tower);
-        let dmg = hit.dmg;
-        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
-
-        this.applyDamage(target, dmg, hit.crit, tower);
+    applyDamage(target, dmg, isCrit, tower) {
+        if (!target.active) return;
         
-        // Add visual hit effect for chain
-        RenderUtils.showHitEffect(this.scene, target.x, target.y, RenderUtils.getProjectileColor(tower));
-
-        if (jumps > 1) {
-            // Find next target from CURRENT target pos
-            const range = COMBAT_CONFIG.CHAIN_JUMP_RANGE; // Chain jump range
-            const next = this.getNearestMonster(target.x, target.y, range, hitList); // Need exclude list
-            if (next) {
-                this.scene.time.delayedCall(100, () => {
-                    this._processChainLink(target.x, target.y, next, jumps - 1, hitList.concat([next]), tower);
-                });
-            }
+        if (this.effectManager) {
+            this.effectManager.showDamageText(target.x, target.y, dmg, isCrit);
         }
-    }
-
-    getNearestMonster(x, y, range, exclude = []) {
-        let nearest = null;
-        let minDist = range;
-        if (!this.scene.monsters) return null;
-        this.scene.monsters.getChildren().forEach(m => {
-            if (exclude.includes(m) || !m.active) return;
-            const d = Phaser.Math.Distance.Between(x, y, m.x, m.y);
-            if (d < minDist) {
-                minDist = d;
-                nearest = m;
-            }
-        });
-        return nearest;
-    }
-
-    applyDebuff(target, debuff, efficiency = 1) {
-        if (!debuff || !target.active || !target.debuffs) return;
-        if (debuff.chance && Math.random() > debuff.chance) return;
-
-        let d = { ...debuff };
-        // Apply Efficiency (Ice Synergy)
-        if (d.type === 'slow' && efficiency > 1) {
-            d.val = 1 - (1 - d.val) * efficiency;
-            if (d.val < 0.1) d.val = 0.1;
-        }
-
-        const existing = target.debuffs.find(e => e.type === d.type);
-        if (existing) {
-            existing.duration = d.duration;
-            if (d.type === 'slow' && d.val < existing.val) { existing.val = d.val; target.isStatusDirty = true; }
-            if (d.type === 'vulnerable' && d.val > existing.val) { existing.val = d.val; target.isStatusDirty = true; }
+        
+        if (this.scene.enemySystem && this.scene.enemySystem.takeDamage) {
+            this.scene.enemySystem.takeDamage(target, dmg, isCrit);
         } else {
-            target.debuffs.push({ ...d, tick: 0 });
-            target.isStatusDirty = true;
+            target.hp -= dmg;
+            this.scene.updateHPBar(target);
+            if (target.hp <= 0) {
+                target.destroy();
+                this.scene.updateMonsterCount();
+            }
+        }
+
+        if (tower && tower.stats && tower.stats.debuff) {
+            this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
         }
     }
 
-    createHitEffect(x, y, element) {
-        RenderUtils.showHitEffect(this.scene, x, y, element);
-    }
-
-    fireProjectile(tower, target, origin) {
-        if (!target || !target.active) return;
-
-        const startX = origin ? origin.x : tower.x;
-        const startY = origin ? origin.y : tower.y;
-        
-        // Use updated createProjectile with 'tower' (item) for color logic
-        const proj = RenderUtils.createProjectile(this.scene, startX, startY, target, tower);
-
-        const spread = 20;
-        const tx = target.x + (Math.random() * spread - spread / 2);
-        const ty = target.y + (Math.random() * spread - spread / 2);
-
-        this.scene.tweens.add({
-            targets: proj,
-            x: tx,
-            y: ty,
-            duration: 200,
-            onComplete: () => {
-                RenderUtils.destroyProjectile(proj);
-                if (target.active) {
-                    // [New Visual] Spear Strike for Thunder/Judgement or Arrow Rain for Leaf
-                    if (tower.id === 'thunder_heavy' || tower.id === 'judgement_prism' || tower.activeSynergy === '전격의 시너지') {
-                        RenderUtils.createSpearStrike(this.scene, target.x, target.y, 0xffff00);
-                        this.applyTowerDamageLogic(tower, target); // Apply damage immediately for spear
-                    } else if (tower.element === 'leaf' || tower.activeSynergy === '대지의 시너지') {
-                        // Arrow Rain: Damage applied on impact via callback
-                        RenderUtils.createArrowRain(this.scene, target.x, target.y, 0x4ade80, () => {
-                            if (target.active) {
-                                this.applyTowerDamageLogic(tower, target);
-                            }
-                        });
-                    } else {
-                        RenderUtils.showHitEffect(this.scene, target.x, target.y, RenderUtils.getProjectileColor(tower));
-                        this.applyTowerDamageLogic(tower, target);
-                    }
-                }
-            }
-        });
-    }
-
-    applyTowerDamageLogic(tower, target) {
+    applyTowerDamageLogic(tower, target, dmgMultiplier = 1) {
         if (!target.active) return;
 
         const hit = this.calculateDamage(tower);
-        let dmg = hit.dmg;
+        let dmg = hit.dmg * dmgMultiplier;
 
         if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
 
-        // Shadow Synergy: Execute
         if (tower.activeSynergy === '그림자의 시너지' || tower.executeThreshold) {
             const hpPercent = target.hp / target.maxHp;
             const threshold = tower.executeThreshold || 0.3;
@@ -295,16 +138,10 @@ export class TowerSystem {
             }
         }
 
-        // Apply Damage to Main Target
         this.applyDamage(target, dmg, hit.crit, tower);
 
-        // Mystic Synergy: Pierce
         if (tower.activeSynergy === '신비의 시너지' || (tower.pierceCount && tower.pierceCount > 0)) {
             const pierceRange = 150;
-            // Recalculate angle since projectile is gone, use tower to target angle
-            // Note: For arrow rain, 'origin' is sky, but we can use tower position for directionality or just area scan
-            // Using simple proximity for secondary targets
-            
             if (this.scene.enemySystem) {
                 const others = this.scene.enemySystem.monsters.getChildren().filter(m =>
                     m !== target && m.active &&
@@ -314,7 +151,6 @@ export class TowerSystem {
                 let pierced = 0;
                 const maxPierce = tower.pierceCount || 1;
                 
-                // For pierce, we ideally want "behind" the target relative to the tower.
                 const originX = tower.el ? tower.el.x : tower.x;
                 const originY = tower.el ? tower.el.y : tower.y;
                 const angle = Phaser.Math.Angle.Between(originX, originY, target.x, target.y);
@@ -333,127 +169,9 @@ export class TowerSystem {
         }
     }
 
-    // Helper to centralize damage application
-    applyDamage(target, dmg, isCrit, tower) {
-        if (!target.active) return;
-        this.showDamageText(target.x, target.y, dmg, isCrit);
-        
-        // Delegate to EnemySystem for consistent damage handling and rewards
-        if (this.scene.enemySystem && this.scene.enemySystem.takeDamage) {
-            this.scene.enemySystem.takeDamage(target, dmg, isCrit);
-        } else {
-            // Fallback
-            target.hp -= dmg;
-            this.scene.updateHPBar(target);
-            if (target.hp <= 0) {
-                target.destroy();
-                this.scene.updateMonsterCount();
-            }
-        }
-
-        if (tower && tower.stats && tower.stats.debuff) {
-            this.applyDebuff(target, tower.stats.debuff, tower.debuffEfficiency);
-        }
-    }
-
-    fireLaser(tower, target, origin) {
-        const colors = { fire: 0xff5555, ice: 0x33ddff, thunder: 0xffeb3b, leaf: 0x4caf50, gem: 0xe040fb };
-        const color = colors[tower.element] || 0xef4444;
-
-        const startX = origin ? origin.x : tower.x;
-        const startY = origin ? origin.y : tower.y;
-
-        const laser = this.scene.add.graphics();
-        laser.setDepth(25);
-        laser.lineStyle(tower.element === 'gem' ? 6 : 4, color, tower.element === 'gem' ? 0.6 : 1);
-        laser.lineBetween(startX, startY, target.x, target.y);
-
-        this.scene.time.delayedCall(80, () => laser.destroy());
-
-        const hit = this.calculateDamage(tower);
-        let dmg = hit.dmg * COMBAT_CONFIG.LASER_DAMAGE_MULT; // Laser ticks often
-        if (target.debuffs && target.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
-
-        // Apply Damage using centralized helper
-        this.applyDamage(target, dmg, hit.crit, tower);
-        
-        // Add visual hit effect for laser
-        RenderUtils.showHitEffect(this.scene, target.x, target.y, RenderUtils.getProjectileColor(tower));
-    }
-
-    fireNova(tower, origin) {
-        // Visual Effect
-        const startX = origin ? origin.x : tower.x;
-        const startY = origin ? origin.y : tower.y;
-
-        const ring = this.scene.add.circle(startX, startY, 10, 0x3b82f6, 0.3);
-        ring.setDepth(25);
-        this.scene.tweens.add({
-            targets: ring,
-            radius: tower.range || 250,
-            alpha: 0,
-            duration: 400,
-            onComplete: () => ring.destroy()
-        });
-
-        // Immediate Damage Logic (Circular area around TOWER)
-        if (this.scene.monsters) {
-            this.scene.monsters.getChildren().forEach(m => {
-                if (!m.active) return;
-                const dist = Phaser.Math.Distance.Between(startX, startY, m.x, m.y);
-                if (dist <= (tower.range || 250)) {
-                    const hit = this.calculateDamage(tower);
-                    let dmg = hit.dmg;
-                    if (m.debuffs && m.debuffs.some(d => d.type === 'vulnerable')) dmg *= COMBAT_CONFIG.VULNERABLE_MULT;
-                    
-                    this.applyDamage(m, dmg, hit.crit, tower);
-                    // Add visual hit effect for nova
-                    RenderUtils.showHitEffect(this.scene, m.x, m.y, RenderUtils.getProjectileColor(tower));
-                }
-            });
-        }
-    }
-
-    fireBomb(tower, target, origin) {
-        const startX = origin ? origin.x : tower.x;
-        const startY = origin ? origin.y : tower.y;
-
-        // RenderUtils를 사용하여 통일된 투사체 생성 (Depth 100 적용됨)
-        const bomb = RenderUtils.createProjectile(this.scene, startX, startY, target, tower);
-        
-        // 추가적인 Bomb 스타일링 (약간 더 크게)
-        bomb.setScale(1.5);
-
-        this.scene.tweens.add({
-            targets: bomb,
-            x: target.x,
-            y: target.y,
-            duration: 400,
-            onComplete: () => {
-                const hitX = target.active ? target.x : bomb.x;
-                const hitY = target.active ? target.y : bomb.y;
-                RenderUtils.destroyProjectile(bomb);
-                
-                // Explode at target location
-                const hit = this.calculateDamage(tower);
-                this.createExplosion(hitX, hitY, tower.stats.aoeRadius || COMBAT_CONFIG.BOMB_RADIUS, hit.dmg, hit.crit, tower);
-            }
-        });
-    }
-
     createExplosion(x, y, radius, damage, isCrit, tower) {
-        // Visual
-        const blast = this.scene.add.circle(x, y, 10, 0xffaa00, 0.6);
-        blast.setDepth(100); // 폭발 이펙트도 Depth 100으로 상향
-        this.scene.tweens.add({
-            targets: blast,
-            radius: radius,
-            alpha: 0,
-            duration: 300,
-            onComplete: () => blast.destroy()
-        });
+        if (this.effectManager) this.effectManager.createExplosion(x, y, radius, 0xffaa00);
 
-        // Damage
         if (this.scene.monsters) {
             this.scene.monsters.getChildren().forEach(m => {
                 if (!m.active) return;
@@ -461,11 +179,9 @@ export class TowerSystem {
                 if (d <= radius) {
                     this.applyDamage(m, damage, isCrit, tower);
                     
-                    // [New Effect] Knockback for Plasma
                     if (tower && (tower.element === 'plasma' || tower.activeSynergy === '플라즈마 시너지')) {
                         if (this.scene.enemySystem && this.scene.enemySystem.applyKnockback) {
-                             // Knockback distance: 30px (small) to 60px (large)
-                             const force = 40;
+                             const force = 10;
                              this.scene.enemySystem.applyKnockback(m, x, y, force);
                         }
                     }
@@ -474,18 +190,88 @@ export class TowerSystem {
         }
     }
 
-    damageMonster(monster, damage) {
-        // Deprecated in favor of applyDamage/EnemySystem.takeDamage
-        if (this.scene.enemySystem && this.scene.enemySystem.takeDamage) {
-            this.scene.enemySystem.takeDamage(monster, damage, false);
-        } else {
-            monster.hp -= damage;
-            this.scene.updateHPBar(monster);
-            if (monster.hp <= 0) {
-                if (monster.hpBar) monster.hpBar.destroy();
-                monster.destroy();
-                this.scene.updateMonsterCount();
+    updateTraps(time) {
+        this.traps.getChildren().forEach(mine => {
+            if (!mine.active) return;
+
+            if (time - mine.spawnTime > mine.duration) {
+                this.destroyMine(mine);
+                return;
             }
+
+            let hit = false;
+            if (this.scene.monsters) {
+                this.scene.monsters.getChildren().some(m => {
+                    if (!m.active) return false;
+                    const dist = Phaser.Math.Distance.Between(mine.x, mine.y, m.x, m.y);
+                    if (dist < 30) { 
+                        hit = true;
+                        return true;
+                    }
+                    return false;
+                });
+            }
+
+            if (hit) {
+                this.createExplosion(mine.x, mine.y, mine.aoeRadius, mine.damage.dmg, mine.damage.crit, mine.sourceTower);
+                this.destroyMine(mine);
+            }
+        });
+    }
+
+    destroyMine(mine) {
+        if (mine.sourceTower && mine.sourceTower.activeTraps > 0) {
+            mine.sourceTower.activeTraps--;
+        }
+        mine.destroy();
+    }
+
+    getNearestMonster(x, y, range, exclude = []) {
+        let nearest = null;
+        let minDist = range;
+        if (!this.scene.monsters) return null;
+        this.scene.monsters.getChildren().forEach(m => {
+            if (exclude.includes(m) || !m.active) return;
+            const d = Phaser.Math.Distance.Between(x, y, m.x, m.y);
+            if (d < minDist) {
+                minDist = d;
+                nearest = m;
+            }
+        });
+        return nearest;
+    }
+
+    getMultipleMonsters(x, y, range, count) {
+        if (!this.scene.monsters) return [];
+        const inRange = this.scene.monsters.getChildren().filter(m => {
+            return m.active && Phaser.Math.Distance.Between(x, y, m.x, m.y) <= range;
+        });
+        inRange.sort((a, b) => {
+            const dA = Phaser.Math.Distance.Between(x, y, a.x, a.y);
+            const dB = Phaser.Math.Distance.Between(x, y, b.x, b.y);
+            return dA - dB;
+        });
+        return inRange.slice(0, count);
+    }
+
+    applyDebuff(target, debuff, efficiency = 1) {
+        if (!debuff || !target.active || !target.debuffs) return;
+        if (debuff.chance && Math.random() > debuff.chance) return;
+
+        let d = { ...debuff };
+        if (d.type === 'slow' && efficiency > 1) {
+            d.val = 1 - (1 - d.val) * efficiency;
+            if (d.val < 0.1) d.val = 0.1;
+        }
+
+        const existing = target.debuffs.find(e => e.type === d.type);
+        if (existing) {
+            existing.duration = d.duration;
+            if (d.type === 'slow' && d.val < existing.val) { existing.val = d.val; target.isStatusDirty = true; }
+            if (d.type === 'vulnerable' && d.val > existing.val) { existing.val = d.val; target.isStatusDirty = true; }
+        } else {
+            target.debuffs.push({ ...d, tick: 0 });
+            target.isStatusDirty = true;
         }
     }
 }

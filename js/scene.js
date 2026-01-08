@@ -1,5 +1,6 @@
 import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, SLOT_SIZE, THEME, GAME_CONFIG } from './constants.js';
 import { UIManager } from './systems/UIManager.js';
+import { EffectManager } from './managers/EffectManager.js';
 import { GridSystem } from './systems/GridSystem.js';
 import { EnemySystem } from './systems/EnemySystem.js';
 import { TowerSystem } from './systems/TowerSystem.js';
@@ -19,10 +20,12 @@ export default class MainScene extends Phaser.Scene {
         this.uiManager.updateGold(this.gold);
         // this.uiManager.updateLives(this.lives); // Removed: Game Over based on monster count now
 
+        this.effectManager = new EffectManager(this);
+
         // Initialize Systems
         this.gridSystem = new GridSystem(this, this.uiManager);
-        this.enemySystem = new EnemySystem(this, null, this.uiManager); // Path init below
-        this.towerSystem = new TowerSystem(this);
+        this.enemySystem = new EnemySystem(this, null, this.uiManager, this.effectManager); // Path init below
+        this.towerSystem = new TowerSystem(this, this.effectManager);
         this.inputSystem = new InputSystem(this, this.gridSystem);
 
         this.gridSystem.drawBackground();
@@ -78,14 +81,14 @@ export default class MainScene extends Phaser.Scene {
     addGold(amount) {
         this.gold += amount;
         this.uiManager.updateGold(this.gold);
-        this.uiManager.renderItems(); // Update shop availability
+        // this.uiManager.renderItems(); // Removed: Prevent shop flickering
     }
 
     spendGold(amount) {
         if (this.gold >= amount) {
             this.gold -= amount;
             this.uiManager.updateGold(this.gold);
-            this.uiManager.renderItems(); // Update shop availability
+            // this.uiManager.renderItems(); // Removed: Prevent shop flickering
             return true;
         }
         return false;

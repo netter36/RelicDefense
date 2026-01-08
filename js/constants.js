@@ -22,16 +22,6 @@ export const SYNERGIES = [
     { id: 'role_support', name: '지원가', type: 'role', key: 'support', req: 2, desc: '디버프 지속시간 +50%' }
 ];
 
-export const ATTACK_TYPES = {
-    NORMAL: 'normal',
-    RAPID: 'rapid',
-    LASER: 'laser',
-    NOVA: 'nova', // Self-centered AoE
-    BOMB: 'bomb', // Ranged Projectile AoE
-    MULTI: 'multi',
-    CHAIN: 'chain'
-};
-
 export const THEME = {
     bg: 0x0d0d0f,
     panel: 0x1a1a1e,
@@ -52,20 +42,22 @@ export const ELEMENT_COLORS = {
     shadow: 0x7c3aed,
     plasma: 0xe879f9,
     mystic: 0x6366f1,
-    tablet: 0x64748b
+    tablet: 0x64748b,
+    normal: 0xffffff // Normal Theme
 };
 
 // 시너지 보너스 상수
 export const SYNERGY_BONUSES = {
-    FIRE_POWER: 1.2,          // 공격력 +20%
-    ICE_FREEZE: 1.25,         // 디버프 효율 +25%
-    THUNDER_RAPID: 0.7,       // 연사 속도 -30%
-    LEAF_REGEN: 1.15,         // 사거리 +15%
-    GEM_CRIT_CHANCE: 0.1,     // 치명타 확률 +10%
-    SHADOW_EXECUTE_THRESHOLD: 0.3, // 체력 30% 이하
-    PLASMA_AOE_MULT: 1.5,     // 범위 50% 증가
-    MYSTIC_PIERCE_ADD: 1,     // 관통 +1
-    GEM_LEGEND_CRIT: 0.1      // 치명타 확률 +10%
+    // Disabled/Simplified for unified theme
+    FIRE_POWER: 1.2,
+    ICE_FREEZE: 1.25,
+    THUNDER_RAPID: 0.7,
+    LEAF_REGEN: 1.15,
+    GEM_CRIT_CHANCE: 0.1,
+    SHADOW_EXECUTE_THRESHOLD: 0.3,
+    PLASMA_AOE_MULT: 1.5,
+    MYSTIC_PIERCE_ADD: 1,
+    GEM_LEGEND_CRIT: 0.1
 };
 
 // 전투 설정 (Combat Configuration)
