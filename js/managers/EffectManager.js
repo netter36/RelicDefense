@@ -50,17 +50,22 @@ export class EffectManager {
         });
     }
 
-    createExplosion(x, y, radius, damage, isCrit, tower) {
-        // This method was mixed in TowerSystem. Here we only handle Visuals.
-        // The calling code should handle damage application.
-        const blast = this.scene.add.circle(x, y, 10, 0xffaa00, 0.6);
-        blast.setDepth(100);
+    createExplosion(x, y, radius, color = 0xffaa00) {
+        // Visuals only - damage logic is handled by TowerSystem/EnemySystem
+        const graphics = this.scene.add.graphics();
+        graphics.setDepth(100);
+        graphics.fillStyle(color, 0.6);
+        graphics.fillCircle(0, 0, radius);
+        graphics.setPosition(x, y);
+        graphics.setScale(0);
+
         this.scene.tweens.add({
-            targets: blast,
-            radius: radius,
+            targets: graphics,
+            scaleX: 1,
+            scaleY: 1,
             alpha: 0,
             duration: 300,
-            onComplete: () => blast.destroy()
+            onComplete: () => graphics.destroy()
         });
     }
 

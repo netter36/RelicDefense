@@ -60,7 +60,12 @@ export class EnemySystem {
     }
 
     updateMonsterCount() {
-        this.uiManager.updateMonsterCount(this.monsters.countActive());
+        const count = this.monsters.countActive();
+        this.uiManager.updateMonsterCount(count);
+        
+        if (count > GAME_CONFIG.MAX_MONSTERS) {
+            this.scene.gameOver();
+        }
     }
 
     getWeightedRandomMonster() {

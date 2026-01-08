@@ -115,7 +115,18 @@ export default class MainScene extends Phaser.Scene {
             color: '#ff0000',
             fontStyle: 'bold'
         }).setOrigin(0.5).setDepth(1001);
-        this.scene.pause();
+        
+        this.add.text(CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 60, 'Click to Restart', {
+            fontSize: '24px',
+            color: '#ffffff'
+        }).setOrigin(0.5).setDepth(1001);
+
+        this.input.once('pointerdown', () => {
+            this.isGameOver = false;
+            this.scene.restart();
+        });
+
+        this.physics.pause();
     }
 
     // Expose for UIManager and Systems

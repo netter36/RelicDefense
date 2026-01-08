@@ -272,12 +272,9 @@ export class UIManager {
         div.dataset.cost = cost; // 골드 업데이트 시 참조용
         if (!canAfford) div.style.opacity = '0.5';
 
-        // const shapeHtml = this._generateShapePreview(item); // Preview removed
         const tagsHtml = this._generateTagsHtml(item, TAG_MAP, ROLE_MAP, ATTACK_TYPE_MAP);
-        // const statsHtml = this._generateStatSummary(item); // New stat summary removed by request
 
         div.innerHTML = `
-            <!-- Preview Removed -->
             <div class="shop-item-info">
                 <div class="shop-item-name">${item.name}</div>
                 <div class="shop-item-meta">
@@ -312,22 +309,6 @@ export class UIManager {
             }
         };
         return div;
-    }
-
-    _generateShapePreview(item) {
-        let shapeHtml = '<div style="display:grid; gap:2px; justify-content:center; align-items:center;">';
-        item.shape.forEach(row => {
-            shapeHtml += '<div style="display:flex; gap:2px;">';
-            row.forEach(cell => {
-                const colorVal = ELEMENT_COLORS[item.element] || 0x64748b;
-                const colorHex = '#' + colorVal.toString(16).padStart(6, '0');
-                const bg = cell ? colorHex : 'transparent';
-                shapeHtml += `<div style="width:8px; height:8px; background:${bg}; border-radius:1px;"></div>`;
-            });
-            shapeHtml += '</div>';
-        });
-        shapeHtml += '</div>';
-        return shapeHtml;
     }
 
     _generateTagsHtml(item, TAG_MAP, ROLE_MAP, ATTACK_TYPE_MAP) {

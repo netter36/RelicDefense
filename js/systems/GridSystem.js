@@ -155,41 +155,7 @@ export class GridSystem {
             container.setDepth(100); // Bring to front while dragging
         });
 
-        container.on('dragend', () => {
-            container.setDepth(5); // 드래그 종료 후 깊이 복구 (기존 10 -> 5)
-            const gx = Math.floor((container.x - this.gridStartPos.x) / SLOT_SIZE);
-            const gy = Math.floor((container.y - this.gridStartPos.y) / SLOT_SIZE);
-
-            // Temporarily remove from grid to check new position
-            this.setGrid(item, null);
-
-            // Adjust gridPos for the new top-left based on center position
-            // But wait, snap() uses gridPos to set center. 
-            // Drag uses center. 
-            // We need to calculate top-left grid coordinates from center.
-            // item.width/height are in slots.
-            // Center is at: start + gridPos*SIZE + size/2
-            // So: gridPos = (Center - start - size/2) / SIZE
-            const newGx = Math.round((container.x - this.gridStartPos.x - (item.width * SLOT_SIZE) / 2) / SLOT_SIZE);
-            const newGy = Math.round((container.y - this.gridStartPos.y - (item.height * SLOT_SIZE) / 2) / SLOT_SIZE);
-
-            item.gridPos = { x: newGx, y: newGy };
-
-            if (this.canPlace(item, newGx, newGy)) {
-                this.snap(item);
-                this.setGrid(item, item);
-                this.calculateSynergies();
-            } else {
-                // Revert to old valid position if invalid (this simplistic logic relies on item.gridPos being updated only on success, 
-                // but we updated it above. We need to store old pos.)
-                // Actually easier: just try to place. If fail, we need to know where it WAS.
-                // The item object still has old gridPos if we didn't update it yet? 
-                // No, we updated it. Let's fix this logic.
-            }
-        });
-
         // Better Drag End Logic
-        container.off('dragend'); // remove any previous
         container.on('dragend', (pointer) => {
             container.setDepth(5); // [Fix] 드래그 종료 시 기본 깊이 5로 통일
             // Calculate proposed grid coordinates
