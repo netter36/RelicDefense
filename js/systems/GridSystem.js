@@ -302,7 +302,7 @@ export class GridSystem {
         }
         
         // [추가] 타워 시스템 정리 (오비탈 투사체 등)
-        if (this.scene.towerSystem) {
+        if (this.scene.towerSystem && item.type === 'artifact') {
             this.scene.towerSystem.cleanupTower(item);
         }
 
@@ -433,8 +433,30 @@ export class GridSystem {
     calculateSynergies() {
         const { activeCombos } = this.synergySystem.calculateSynergies(this.placedItems, SLOT_SIZE);
         this.placedItems.forEach(item => { if (item.el) RenderUtils.renderProceduralShape(this.scene, item.el, item); });
-        const totalAtk = this.placedItems.reduce((acc, i) => acc + (i.currentAtk || 0), 0);
-        this.uiManager.updateHUD({ atk: Math.round(totalAtk), fireBonus: 0, artifacts: 0, combos: activeCombos });
+        
+        // Calculate Total DPS
+        let totalDPS = 0;
+        this.placedItems.forEach(item => {
+            if (item.type !== 'artifact' || !item.currentAtk) return;
+
+            const atk = item.currentAtk;
+            const interval = item.currentFireRate || 1000;
+            
+            if (item.stats && item.stats.attackType === 'rapid') {
+                const burst = item.stats.burstCount || 5;
+                const reload = item.stats.reloadTime || 1500;
+                const cycleTime = (burst * interval) + reload;
+                if (cycleTime > 0) {
+                    totalDPS += (atk * burst) / (cycleTime / 1000);
+                }
+            } else {
+                if (interval > 0) {
+                    totalDPS += atk * (1000 / interval);
+                }
+            }
+        });
+
+        this.uiManager.updateHUD({ combos: activeCombos, dps: Math.floor(totalDPS) });
         // this.uiManager.renderItems(); // Removed: Prevent shop flickering
     }
 }

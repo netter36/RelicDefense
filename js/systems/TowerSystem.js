@@ -51,6 +51,8 @@ export class TowerSystem {
     }
 
     cleanupTower(tower) {
+        if (!tower.stats) return;
+
         const at = tower.stats.attackType || ATTACK_TYPES.NORMAL;
         const strategy = this.strategies[at];
         if (strategy) {

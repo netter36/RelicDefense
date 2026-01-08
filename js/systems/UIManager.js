@@ -15,15 +15,13 @@ export class UIManager {
     }
 
     updateHUD(state) {
-        const atkEl = document.getElementById('stat-atk');
-        const fireEl = document.getElementById('stat-fire-bonus');
-        const artEl = document.getElementById('stat-artifacts');
-
-        if (atkEl) atkEl.innerText = state.atk;
-        if (fireEl) fireEl.innerText = state.fireBonus + '%';
-        if (artEl) artEl.innerText = state.artifacts;
-
         const comboList = document.getElementById('combo-list');
+        const dpsEl = document.getElementById('stat-dps');
+
+        if (dpsEl && state.dps !== undefined) {
+            dpsEl.innerText = state.dps.toLocaleString(); // 1,000 단위 콤마
+        }
+
         if (!comboList) return;
 
         if (state.combos.length === 0) {
@@ -119,7 +117,7 @@ export class UIManager {
     }
 
     initSpeedControls() {
-        const speeds = [1, 2, 4];
+        const speeds = [0, 1, 2, 4];
         speeds.forEach(s => {
             const btn = document.getElementById(`btn-speed-${s}`);
             if (btn) {
@@ -128,11 +126,13 @@ export class UIManager {
                     speeds.forEach(os => {
                         const ob = document.getElementById(`btn-speed-${os}`);
                         if (ob) {
+                            ob.classList.remove('active');
                             ob.style.background = '#333';
                             ob.style.color = '#aaa';
                             ob.style.border = '1px solid #444';
                         }
                     });
+                    btn.classList.add('active');
                     btn.style.background = '#6366f1';
                     btn.style.color = 'white';
                     btn.style.border = 'none';

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sephiria Inventory System</title>
+    <title>Relic Defense</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,14 @@
     <div class="game-container">
         <div id="fps-counter" style="position: absolute; top: 10px; right: 10px; color: #00ff00; font-family: monospace; font-size: 14px; z-index: 1000; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px;">FPS: 60</div>
         <header class="game-header">
-            <h1 class="pixel-text">PROJECT : DEFENCE</h1>
+            <h1 class="pixel-text">Relic Defense</h1>
+            <!-- Speed Controls Moved Here -->
+            <div class="speed-controls" style="position: absolute; top: 15px; left: 20px; display: flex; gap: 5px;">
+                <button id="btn-speed-0" class="speed-btn">⏸️</button>
+                <button id="btn-speed-1" class="speed-btn active">x1</button>
+                <button id="btn-speed-2" class="speed-btn">x2</button>
+                <button id="btn-speed-4" class="speed-btn">x4</button>
+            </div>
         </header>
 
         <main class="game-main">
@@ -36,18 +43,9 @@
                             <div class="stat-label">골드</div>
                             <div id="stat-gold" class="stat-value" style="color:#ffd700">0</div>
                         </div>
-                        <!-- Lives removed, replaced by Monster Limit logic -->
                         <div class="stat-card">
-                            <div class="stat-label">공격력</div>
-                            <div id="stat-atk" class="stat-value">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">연사속도</div>
-                            <div id="stat-fire-bonus" class="stat-value">0%</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">배치 유물</div>
-                            <div id="stat-artifacts" class="stat-value">0</div>
+                            <div class="stat-label">종합 DPS</div>
+                            <div id="stat-dps" class="stat-value" style="color:#fbbf24">0</div>
                         </div>
                         <div class="stat-card" style="grid-column: span 2;">
                             <div class="stat-label">몬스터 (게임 오버까지)</div>
@@ -64,7 +62,8 @@
                             <!-- Dynamic content injected by JS -->
                             <div class="diff-row"><span>⏱️ 진행 시간</span><span>00:00</span></div>
                             <div class="diff-row"><span>⚡ 스폰 주기</span><span>1.0s</span></div>
-                            <div class="diff-bonus">HP 보너스 x1.0</div>
+                            <div class="diff-bonus">
+                            🩸 몬스터 체력 x1.0
                         </div>
                     </div>
                 </section>

@@ -65,16 +65,20 @@ export default class MainScene extends Phaser.Scene {
 
     update(time, delta) {
         if (this.isGameOver) return;
-        this.gameTimer += delta;
+
+        // Apply timeScale manually because Phaser's delta is unscaled
+        const scaledDelta = delta * this.time.timeScale;
+
+        this.gameTimer += scaledDelta;
         
-        // FPS Update (every 200ms)
+        // FPS Update (every 200ms) - Use unscaled delta for UI
         this.fpsUpdateTimer += delta;
         if (this.fpsUpdateTimer > 200 && this.fpsElem) {
             this.fpsElem.innerText = `FPS: ${Math.round(this.game.loop.actualFps)}`;
             this.fpsUpdateTimer = 0;
         }
 
-        if (this.enemySystem) this.enemySystem.update(delta);
+        if (this.enemySystem) this.enemySystem.update(scaledDelta);
         if (this.towerSystem) this.towerSystem.update(this.gameTimer, this.gridSystem.placedItems);
     }
 

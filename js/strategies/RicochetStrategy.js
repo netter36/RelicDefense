@@ -16,12 +16,16 @@ export class RicochetStrategy extends AttackStrategy {
         
         const proj = RenderUtils.createProjectile(this.scene, startX, startY, target, tower);
         
-        this.scene.tweens.add({
-            targets: proj,
-            angle: 360,
-            duration: 300,
-            repeat: -1
-        });
+        // Manual rotation update to support timeScale
+        const rotationSpeed = 1.2; // degrees per ms
+        const updateRotation = (time, delta) => {
+            if (!proj.active) {
+                this.scene.events.off('update', updateRotation);
+                return;
+            }
+            proj.angle += rotationSpeed * delta * this.scene.time.timeScale;
+        };
+        this.scene.events.on('update', updateRotation);
 
         const dist = Phaser.Math.Distance.Between(startX, startY, target.x, target.y);
         const duration = (dist / 600) * 1000;
@@ -32,6 +36,7 @@ export class RicochetStrategy extends AttackStrategy {
             y: target.y,
             duration: Math.max(100, duration),
             onComplete: () => {
+                this.scene.events.off('update', updateRotation);
                 RenderUtils.destroyProjectile(proj);
                 if (target.active) {
                     const hit = this.towerSystem.calculateDamage(tower);

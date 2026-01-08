@@ -27,7 +27,7 @@ export class OrbitStrategy extends AttackStrategy {
             return;
         }
 
-        const speed = tower.stats.orbitSpeed || 0.05;
+        const speed = (tower.stats.orbitSpeed || 0.05) * this.scene.time.timeScale;
         const radius = tower.stats.orbitRadius || 80;
         tower.orbitAngle += speed;
         
