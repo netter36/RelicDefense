@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relic Defense</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@beta/dist/phaser.min.js"></script>
+  <script type="module" crossorigin src="/assets/index-Bs2J5G6h.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BWSAKiQl.css">
+</head>
+
+<body>
+    <div class="game-container">
+        <div id="fps-counter" style="position: absolute; top: 10px; right: 10px; color: #00ff00; font-family: monospace; font-size: 14px; z-index: 1000; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px;">FPS: 60</div>
+        <header class="game-header">
+            <h1 class="pixel-text">Relic Defense</h1>
+            <!-- Speed Controls Moved Here -->
+            <div class="speed-controls" style="position: absolute; top: 15px; left: 20px; display: flex; gap: 5px;">
+                <button id="btn-speed-0" class="speed-btn">⏸</button>
+                <button id="btn-speed-1" class="speed-btn active">x1</button>
+                <button id="btn-speed-2" class="speed-btn">x2</button>
+                <button id="btn-speed-4" class="speed-btn">x4</button>
+            </div>
+        </header>
+
+        <main class="game-main">
+            <!-- Left Sidebar: Integrated Info Panel -->
+            <aside class="sidebar side-left" style="gap: 10px; display: flex; flex-direction: column;">
+                <section class="panel-container" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                    <div class="panel-header">시너지 정보</div>
+                    <div id="combo-list" class="effect-list" style="flex: 1; overflow-y: auto;">
+                        <div class="no-effects">활성화된 콤보 없음</div>
+                    </div>
+                </section>
+
+                <section class="panel-container" style="border-top: 2px solid var(--border-color);">
+                    <div class="panel-header">정보</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">골드</div>
+                            <div id="stat-gold" class="stat-value" style="color:#ffd700">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">종합 DPS</div>
+                            <div id="stat-dps" class="stat-value" style="color:#fbbf24">0</div>
+                        </div>
+                        <div class="stat-card" style="grid-column: span 2;">
+                            <div class="stat-label">몬스터 (게임 오버까지)</div>
+                            <div id="monster-count" class="stat-value monster-value">0 / 150</div>
+                        </div>
+                    </div>
+
+                    <div class="difficulty-card">
+                        <div class="diff-header">
+                            <span>현재 위험도</span>
+                            <span id="difficulty-level-value" class="diff-value">LV.1.00</span>
+                        </div>
+                        <div class="diff-details" id="difficulty-details">
+                            <!-- Dynamic content injected by JS -->
+                            <div class="diff-row"><span>⏱️ 진행 시간</span><span>00:00</span></div>
+                            <div class="diff-row"><span>⚡ 스폰 주기</span><span>1.0s</span></div>
+                            <div class="diff-bonus">
+                            🩸 몬스터 체력 x1.0
+                        </div>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Center: Phaser Game Canvas -->
+            <section class="inventory-section">
+                <div id="phaser-game-container"></div>
+                <div class="controls-hint">
+                    <span class="key">드래그</span> 이동 | <span class="key">우클릭</span> 삭제 | <span class="key">R</span> 회전
+                </div>
+            </section>
+
+            <!-- Right Sidebar: Item Creation -->
+            <aside class="sidebar side-right">
+                <div class="item-editor" style="height: 100%;">
+                    <div class="panel-header">상점</div>
+
+                    <!-- Tabs Container -->
+                    <div id="shop-tabs" class="shop-tabs">
+                        <!-- Tabs injected by JS or static -->
+                        <button class="shop-tab-btn active" data-tab="artifact">아티팩트</button>
+                        <button class="shop-tab-btn" data-tab="module">모듈</button>
+                    </div>
+
+                    <div id="shop-tags" class="tag-container">
+                        <!-- Tag pills injected here -->
+                    </div>
+
+                    <div id="item-shop" class="shop-grid">
+                        <!-- Shop items injected here -->
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Tooltip -->
+        <div id="tooltip" class="tooltip hidden">
+            <div class="tooltip-name">Item Name</div>
+            <div class="tooltip-rarity">Legendary</div>
+            <hr>
+            <div class="tooltip-desc">Item description goes here.</div>
+        </div>
+    </div>
+
+</body>
+
+</html>

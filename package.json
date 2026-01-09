@@ -1,0 +1,28 @@
+{
+  "name": "testwebgame",
+  "version": "1.0.0",
+  "description": "**인벤토리 퍼즐 × 타워 디펜스**",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/netter36/RelicDefense.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/netter36/RelicDefense/issues"
+  },
+  "homepage": "https://github.com/netter36/RelicDefense#readme",
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "phaser": "^4.0.0-rc.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}
