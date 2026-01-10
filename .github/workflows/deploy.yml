@@ -20,8 +20,9 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # GITHUB_TOKEN이 자동으로 주입되므로 별도 입력 필요 없음
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          personal_token: ${{ secrets.GH_PAT }} # ← 여기서 PAT 사용
+          github_token: ${{ secrets.GITHUB_TOKEN }} # ← 생략해도 됨, 명시적으로 넣어주면 가독성 ↑
           publish_dir: ./dist
