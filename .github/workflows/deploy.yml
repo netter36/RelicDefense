@@ -1,9 +1,8 @@
-name: Game Deployment Workflow
+name: Deploy Game to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,8 +14,8 @@ env:
   NODE_VERSION: "20"
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages-deploy
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
@@ -26,50 +25,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
+      # Node.js 설치 + package-lock.json 기반 캐시
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache-dependency-path: package-lock.json
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          key: node-modules-${{ runner.os }}-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-          path: node_modules/
-
-      - name: Build Game
+      # Vite + TypeScript 빌드 (dist 폴더가 생성되는지 확인)
+      - name: Build project
         run: |
           npm run build
-          # Verify build completed successfully
-          if [ ! -d "dist" ]; then
-            echo "Build failed: dist directory not found"
+          if [ ! -d dist ]; then
+            echo "Build failed – no dist directory"
             exit 1
           fi
 
-      - name: Cache Build Artifacts
-        uses: actions/cache@v3
-        with:
-          key: build-artifacts-${{ github.sha }}
-          path: dist/
-
-      - name: Setup GitHub Pages Deployment
+      # GitHub Pages 설정 준비
+      - name: Prepare GitHub Pages deployment
         uses: actions/configure-pages@v4
 
-      - name: Upload Build Artifacts
+      # 빌드 결과 업로드
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./dist"
+          path: dist
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+      # 실제 배포
+      - id: deployment
+        name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
-        with:
-          secrets: |
-            GITHUB_PAGES_DEPLOYMENT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
