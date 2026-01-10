@@ -39,17 +39,21 @@ jobs:
       - name: Build project
         run: npm run build # vite build → ./dist 생성
 
+      # 3️⃣ **빌드 딜레이** (10초 대기)
+            - name: Wait before building
+              run: sleep 10   # 원하는 초 단위로 조정
+
       # 5️⃣ GitHub Pages 설정 (pages 서비스 활성화)
       - name: Setup Pages
         uses: actions/configure-pages@v4
         with:
           enablement: true
 
-      # 6️⃣ 빌드 결과를 artifact 로 업로드 (여기서 dist 를 지정)
+      # 6️⃣ 빌드 결과를 artifact 로 업로드
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./dist" # ← 이 부분이 핵심
+          path: "." # ← 이 부분이 핵심
 
       # 7️⃣ GitHub Pages 배포
       - name: Deploy to GitHub Pages
