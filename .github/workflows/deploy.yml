@@ -2,30 +2,26 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main] # 배포를 트리거할 브랜치 (필요하면 변경)
+    branches: [main]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Set up Node.js (Node 20)
         uses: actions/setup-node@v3
         with:
-          node-version: "20" # ← 여기서 Node 20.x 를 지정합니다.
-          cache: npm # 옵션 : npm 캐시 사용해 설치 속도 향상
+          node-version: "20"
+          cache: npm
 
-      - name: Install dependencies
-        run: npm ci # package-lock.json 기준으로 정확히 설치
-
-      - name: Build the Vite project
-        run: npm run build # vite build (Node 20이므로 성공)
+      - run: npm ci
+      - run: npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist # Vite가 빌드한 파일들이 들어 있는 디렉터리
+          personal_token: ${{ secrets.GH_PAT }} # ← 여기서 PAT 사용
+          publish_dir: ./dist
