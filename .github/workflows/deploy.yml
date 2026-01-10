@@ -37,7 +37,7 @@ jobs:
 
       # 4️⃣ 프로젝트 빌드
       - name: Build project
-        run: npm run build # vite build → ./dist 생성
+        run: npm run build # vite build
 
       # 5️⃣ GitHub Pages 설정 (pages 서비스 활성화)
       - name: Setup Pages
@@ -49,7 +49,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "." # ← 이 부분이 핵심
+          path: "./dist" # ← 이 부분이 핵심
 
       # 7️⃣ GitHub Pages 배포
       - name: Deploy to GitHub Pages
