@@ -1,28 +1,29 @@
+# .github/workflows/deploy.yml
 name: Deploy Game to GitHub Pages
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [main] # main 브랜치에 푸시될 때마다 실행
+  workflow_dispatch: # 수동 트리거도 가능
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: read # 저장소 내용 읽기
+  pages: write # GitHub Pages 배포 권한
+  id-token: write # 인증 토큰 사용
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "20" # Node.js 버전
 
 concurrency:
-  group: pages-deploy
-  cancel-in-progress: true
+  group: pages-deploy # 동시에 하나만 실행
+  cancel-in-progress: true # 새 배포가 시작되면 이전을 취소
 
 jobs:
   build-and-deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -34,10 +35,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache-dependency-path: package-lock.json
 
+      # 1️⃣ npm ci (의존성 설치)
       - name: Install dependencies
         run: npm ci
 
-      # Vite + TypeScript 빌드 (dist 폴더가 생성되는지 확인)
+      # 2️⃣ npm run build (Vite + TS 빌드, dist 생성 확인)
       - name: Build project
         run: |
           npm run build
@@ -45,6 +47,13 @@ jobs:
             echo "Build failed – no dist directory"
             exit 1
           fi
+
+      # 3️⃣ npx serve -s dist (정적 서버를 백그라운드에서 실행)
+      - name: Serve dist for testing
+        run: |
+          # serve 를 바로 실행해도 되지만, 비동기로 띄워서 다음 단계가 진행되도록 함
+          npx serve -s dist &
+          echo "Static server started in background (port 5000)."
 
       # GitHub Pages 설정 준비
       - name: Prepare GitHub Pages deployment
